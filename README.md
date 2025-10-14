@@ -1,1 +1,3 @@
 # trading-simulator
+
+django
