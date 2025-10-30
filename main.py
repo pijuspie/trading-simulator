@@ -1,22 +1,26 @@
 import yfinance as yf
 import matplotlib.pyplot as plt
 
-# Choose your stock symbol
-symbol = "GOOG"
+# --- 1. Download hourly data for the last 5 days
+symbol = "AAPL"
+data = yf.download(symbol, period="5d", interval="5m", auto_adjust=True)
 
-# Fetch 5 days of 30-minute interval data
-data = yf.download(symbol, period="5d", interval="30m")
+# --- 2. Convert to New York time (market local time)
+data.index = data.index.tz_convert('America/New_York')
 
-# Print first few rows
-print(data.head())
+# --- Create a sequential x-axis (no gaps for closed market)
+x = range(len(data))  # 0, 1, 2, ..., n
+y = data["Close"]
 
-# Plot close prices
-plt.figure(figsize=(12,6))
-plt.plot(data.index, data["Close"], label=f"{symbol} Close", color="blue")
-plt.title(f"{symbol} Stock Prices (30-min intervals)")
-plt.xlabel("Date/Time")
+plt.figure(figsize=(10,5))
+plt.plot(x, y, color="royalblue")
+plt.title(f"{symbol} Hourly Price (Market Hours Only)")
 plt.ylabel("Price (USD)")
-plt.legend()
+plt.xlabel("Trading Hours (Sequential)")
 plt.grid(True)
+
+# Optionally, show one label per day
+xticks = data.index.strftime("%m-%d %H:%M")
+plt.xticks(x[::12], xticks[::12], rotation=90)  # show every ~12th hour label
 plt.tight_layout()
 plt.show()
