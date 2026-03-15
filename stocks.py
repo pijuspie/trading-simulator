@@ -1,53 +1,70 @@
-import yfinance
+import sqlite3
+from datetime import datetime
+import market
 
-class StocksRepository:
-    def __init__(self, rep):
-        self.connection = rep.connection
-        self.cursor = rep.cursor
+# get stock list
+# get stock price now
+# get stock historical price from to
+# update function
 
-    def init(self):
-        self.cursor.execute("CREATE TABLE StockList (ID INTEGER PRIMARY KEY, Ticker TEXT NOT NULL UNIQUE, Name TEXT NOT NULL)")
-        self.cursor.execute("CREATE TABLE StockPrices (ID INTEGER NOT NULL, Price REAL NOT NULL, Timestamp INTEGER NOT NULL, PRIMARY KEY (id, timestamp))")
+stock_db = None
+
+def init_stock_db(path):
+    global stock_db
+    stock_db = StockDB(path)
+
+class StockDB:
+    def __init__(self, path):
+        self.connection = sqlite3.connect(path)
+        self.cursor = self.connection.cursor()
+
+    def init_db(self):
+        self.cursor.execute("CREATE TABLE stock_list (id INTEGER PRIMARY KEY, ticker TEXT NOT NULL UNIQUE, name TEXT NOT NULL);")
+        self.cursor.execute("CREATE TABLE stock_prices (id INTEGER NOT NULL, price REAL NOT NULL, timestamp INTEGER NOT NULL, PRIMARY KEY (id, timestamp));")
+        self.connection.commit()
+        self.insert_stock("Apple", "AAPL")
+        self.insert_stock("Alphabet", "GOOG")
+        self.insert_stock("Microsoft", "MSFT")
+        print("StockDB initialised")
+
+    def insert_stock(self, name, ticker):
+        self.cursor.execute(f"INSERT INTO stock_list (ticker, name) VALUES ('{ticker}', '{name}');")
         self.connection.commit()
 
-    def insertStock(self, name, ticker):
-        self.cursor.execute(f"INSERT INTO StockList (Ticker, Name) VALUES ('{ticker}', '{name}')")
+    def remove_stock(self, id):
+        self.cursor.execute(f"DELETE FROM stock_list WHERE id='{id}';")
         self.connection.commit()
 
-    def getStockList(self):
-        self.cursor.execute("SELECT * FROM StockList")
+    def get_stock_list(self):
+        self.cursor.execute("SELECT * FROM stock_list;")
         stocks = [{"id": x[0], "ticker": x[1], "name": x[2] } for x in self.cursor.fetchall()]
         return stocks
 
-    def getStockPricesAll(self):
-        self.cursor.execute("SELECT * FROM StockPrices")
-        return self.cursor.fetchall()
+    def get_stock_price_now(self, id):
+        self.cursor.execute(f"SELECT price FROM stock_prices WHERE id='{id}' ORDER BY timestamp DESC LIMIT 1;")
+        return self.cursor.fetchone()[0]
 
-    def getStockPrices(self, id):
-        self.cursor.execute(f"SELECT Price, Timestamp FROM StockPrices WHERE ID='{id}'")
-        return self.cursor.fetchall()
+    def get_stock_prices(self, id, start, end):
+        self.cursor.execute(f"SELECT price, timestamp FROM stock_prices WHERE id='{id}' AND timestamp>='{start}' AND timestamp<='{end}';")
+        return self.cursor.fetchall() 
+
+    def get_stock_prices_all(self):
+        self.cursor.execute(f"SELECT * FROM stock_prices;")
+        return self.cursor.fetchall() 
 
     def update(self):
-        self.cursor.execute("SELECT date(MAX(Timestamp), 'unixepoch') FROM StockPrices")
+        self.cursor.execute("SELECT MAX(timestamp) FROM stock_prices;")
         start = self.cursor.fetchone()[0]
+        
+        if start == None:
+            start = datetime.fromisocalendar(2026, 1, 1).timestamp()
+        end = datetime.now().timestamp()
 
-        stocks = self.getStockList()
-        tickers = [x["ticker"] for x in stocks]
+        stocks = self.get_stock_list()
+        data = market.download(stocks, start, end)
 
-        data = yfinance.download(tickers, start, interval="1m", progress=False)
-        if data.empty: return
-
-        data = data["Close"].reset_index()
-        data["Timestamp"] = data["Datetime"].astype("int64") // 10**9
-
-        for i in range(len(stocks)):
-            id, ticker = stocks[i]["id"], stocks[i]["ticker"]
-            series = data[["Timestamp", ticker]]
-
-            for _, row in series.iterrows():
-                pass
-                # self.cursor.execute(f"INSERT OR IGNORE INTO StockPrices (ID, Price, Timestamp) VALUES ({id}, {float(row[ticker])}, {int(row["Timestamp"])})") 
+        for d in data:
+            self.cursor.execute(f"INSERT OR IGNORE INTO stock_prices (id, price, timestamp) VALUES ('{d[0]}', '{d[1]}', '{d[2]}');") 
 
         self.connection.commit()
-
 

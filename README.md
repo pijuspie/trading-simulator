@@ -17,8 +17,10 @@ Pages:
 ### Set up
 
 ```
-py -m venv env
+python3 -m venv env
 env\Scripts\activate
-pip install -r requirements.txt
-py main.py
+python3 -m pip install yfinance
+python3 -m pip install Flask
+python3 -m pip install -r requirements.txt
+python3 main.py
 ```

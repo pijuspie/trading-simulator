@@ -1,11 +1,11 @@
-from repository.repository import Repository
-from repository.stocks import StocksRepository
+from stocks import init_stock_db, stock_db
+from project import init_project_db, project_db
+from app import app
 
+init_stock_db("stocks.db")
+init_project_db("project.db")
+app.run()
 
-rep = Repository("data.db")
-stocks = StocksRepository(rep)
-
-print(stocks.getStockList())
-stocks.update()
-print(stocks.getStockPrices(1))
-
+# stock_db.init_db()
+# stock_db.update()
+# project_db.init_db()
