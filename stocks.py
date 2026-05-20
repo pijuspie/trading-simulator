@@ -2,69 +2,72 @@ import sqlite3
 from datetime import datetime
 import market
 
-# get stock list
-# get stock price now
-# get stock historical price from to
-# update function
-
 stock_db = None
+
+# todo foreign key
 
 def init_stock_db(path):
     global stock_db
-    stock_db = StockDB(path)
+    stock_db = StockManager(path)
 
-class StockDB:
+class StockManager:
     def __init__(self, path):
-        self.connection = sqlite3.connect(path)
-        self.cursor = self.connection.cursor()
+        self.__path = path
+        self.__connection = sqlite3.connect(path)
+        self.__cursor = self.__connection.cursor()
 
-    def init_db(self):
-        self.cursor.execute("CREATE TABLE stock_list (id INTEGER PRIMARY KEY, ticker TEXT NOT NULL UNIQUE, name TEXT NOT NULL);")
-        self.cursor.execute("CREATE TABLE stock_prices (id INTEGER NOT NULL, price REAL NOT NULL, timestamp INTEGER NOT NULL, PRIMARY KEY (id, timestamp));")
-        self.connection.commit()
+    def __commit(self, sql):
+        self.__cursor.execute(sql)
+        self.__connection.commit()
+
+    def __readOne(self, sql):
+        self.__cursor.execute(sql)
+        return self.__cursor.fetchone()[0]
+
+    def __readAll(self, sql):
+        self.__cursor.execute(sql)
+        return self.__cursor.fetchall()
+
+    def initializeDatabase(self):
+        self.__commit("CREATE TABLE Stock (stockId INTEGER AUTOINCREMENT PRIMARY KEY, stockTicker TEXT NOT NULL UNIQUE, stockName TEXT NOT NULL UNIQUE);")
+        self.__commit("CREATE TABLE StockPrice (stockId INTEGER NOT NULL, price REAL NOT NULL, timestamp INTEGER NOT NULL, PRIMARY KEY (stockId, timestamp));")
+
+        # hardcoded
         self.insert_stock("Apple", "AAPL")
         self.insert_stock("Alphabet", "GOOG")
         self.insert_stock("Microsoft", "MSFT")
         print("StockDB initialised")
 
-    def insert_stock(self, name, ticker):
-        self.cursor.execute(f"INSERT INTO stock_list (ticker, name) VALUES ('{ticker}', '{name}');")
-        self.connection.commit()
+    def addStock(self, stock):
+        self.__commit(f"INSERT INTO Stock (stockTicker, stockName) VALUES ('{stock.getTicker()}', '{stock.getName()}');")
 
-    def remove_stock(self, id):
-        self.cursor.execute(f"DELETE FROM stock_list WHERE id='{id}';")
-        self.connection.commit()
+    def removeStock(self, id):
+        self.__commit(f"DELETE FROM Stock WHERE stockId='{id}';")
 
-    def get_stock_list(self):
-        self.cursor.execute("SELECT * FROM stock_list;")
-        stocks = [{"id": x[0], "ticker": x[1], "name": x[2] } for x in self.cursor.fetchall()]
+    def getStocks(self):
+        stocks = self.__readAll("SELECT * FROM Stock;")
+        stocks = [market.Stock(int(x[0]), x[2], x[1]) for x in stocks]
         return stocks
 
-    def get_stock_price_now(self, id):
-        self.cursor.execute(f"SELECT price FROM stock_prices WHERE id='{id}' ORDER BY timestamp DESC LIMIT 1;")
-        return self.cursor.fetchone()[0]
-
-    def get_stock_prices(self, id, start, end):
-        self.cursor.execute(f"SELECT price, timestamp FROM stock_prices WHERE id='{id}' AND timestamp>='{start}' AND timestamp<='{end}';")
-        return self.cursor.fetchall() 
-
-    def get_stock_prices_all(self):
-        self.cursor.execute(f"SELECT * FROM stock_prices;")
-        return self.cursor.fetchall() 
-
-    def update(self):
-        self.cursor.execute("SELECT MAX(timestamp) FROM stock_prices;")
-        start = self.cursor.fetchone()[0]
+    def updatePrices(self):
+        start = self.__readOne("SELECT MAX(timestamp) FROM StockPrice;")
         
         if start == None:
             start = datetime.fromisocalendar(2026, 1, 1).timestamp()
         end = datetime.now().timestamp()
 
-        stocks = self.get_stock_list()
+        stocks = self.getStocks()
         data = market.download(stocks, start, end)
 
         for d in data:
-            self.cursor.execute(f"INSERT OR IGNORE INTO stock_prices (id, price, timestamp) VALUES ('{d[0]}', '{d[1]}', '{d[2]}');") 
+            self.cursor.execute(f"INSERT OR IGNORE INTO StockPrice (stockId, price, timestamp) VALUES ('{d.getStockId()}', '{d.getPrice()}', '{d.getTimestamp()}');") 
 
         self.connection.commit()
 
+    def getPriceNow(self, id):
+        price = self.__readOne(f"SELECT price FROM StockPrice WHERE stockId='{id}' ORDER BY timestamp DESC LIMIT 1;")
+        return price # to do return object
+
+    def getPrices(self, id, start, end):
+        prices = self.__readAll(f"SELECT price, timestamp FROM StockPrice WHERE stockId='{id}' AND timestamp>='{start}' AND timestamp<='{end}';")
+        return prices # to do object list 

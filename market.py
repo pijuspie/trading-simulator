@@ -2,12 +2,43 @@ import yfinance
 import logging
 from datetime import datetime, timedelta, date
 
+class Stock:
+    def __init__(self, id, name, ticker):
+        self.__id = id
+        self.__name = name
+        self.__ticker = ticker
+
+    def getName(self):
+        return self.__name
+    
+    def getId(self):
+        return self.__id
+    
+    def getTicker(self):
+        return self.__ticker
+
+class StockPrice:
+    def __init__(self, timestamp, stockId, price):
+        self.__timestamp = timestamp
+        self.__stockId = stockId
+        self.__price = price
+
+    def getTimestamp(self):
+        return self.__timestamp
+    
+    def getStockId(self):
+        return self.__stockId
+    
+    def getPrice(self):
+        return self.__price
+
+
 logging.getLogger("yfinance").setLevel(logging.CRITICAL)
 
 def downloadOne(stock, day):
     next_day = (date.fromisoformat(day) + timedelta(days=1)).isoformat()
-    print("Downloading", stock["ticker"], day)
-    data = yfinance.download(stock["ticker"], start=day, end=next_day, interval="1m",prepost=True, progress=False)
+    print("Downloading", stock.getTicker(), day)
+    data = yfinance.download(stock.getTicker(), start=day, end=next_day, interval="1m",prepost=True, progress=False)
     if data.empty: return []
 
     data = data["Close"].reset_index()
@@ -15,9 +46,10 @@ def downloadOne(stock, day):
 
     result = []
 
-    series = data[["Timestamp", stock["ticker"]]]
+    series = data[["Timestamp", stock.getTicker()]]
     for _, row in series.iterrows():
-        result.append([stock["id"], float(row[stock["ticker"]]), int(row["Timestamp"])])
+        stockPrice = StockPrice(int(row["Timestamp"]), stock.getId(), float(row[stock.getTicker()]))
+        result.append(stockPrice)
 
     return result
 
