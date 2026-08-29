@@ -37,12 +37,11 @@ logging.getLogger("yfinance").setLevel(logging.CRITICAL)
 
 def downloadOne(stock, day):
     next_day = (date.fromisoformat(day) + timedelta(days=1)).isoformat()
-    print("Downloading", stock.getTicker(), day)
     data = yfinance.download(stock.getTicker(), start=day, end=next_day, interval="1m",prepost=True, progress=False)
     if data.empty: return []
 
     data = data["Close"].reset_index()
-    data["Timestamp"] = data["Datetime"].astype("int64") // 10**9
+    data["Timestamp"] = data["Datetime"].astype("int64")
 
     result = []
 
@@ -61,6 +60,7 @@ def download(stocks, start, end):
 
     data = []
     for date in dates:
+        print("Donwloading", date)
         for stock in stocks:
             try:
                 data.extend(downloadOne(stock, date))

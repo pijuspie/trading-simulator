@@ -2,13 +2,17 @@ import sqlite3
 from datetime import datetime
 import market
 
-stock_db = None
+START = datetime.fromisocalendar(2026, 35, 1).timestamp()
 
-# todo foreign key
+stock_db = None
 
 def init_stock_db(path):
     global stock_db
     stock_db = StockManager(path)
+
+def get_stock_db():
+    global stock_db
+    return stock_db
 
 class StockManager:
     def __init__(self, path):
@@ -22,21 +26,11 @@ class StockManager:
 
     def __readOne(self, sql):
         self.__cursor.execute(sql)
-        return self.__cursor.fetchone()[0]
+        return self.__cursor.fetchone()
 
     def __readAll(self, sql):
         self.__cursor.execute(sql)
         return self.__cursor.fetchall()
-
-    def initializeDatabase(self):
-        self.__commit("CREATE TABLE Stock (stockId INTEGER AUTOINCREMENT PRIMARY KEY, stockTicker TEXT NOT NULL UNIQUE, stockName TEXT NOT NULL UNIQUE);")
-        self.__commit("CREATE TABLE StockPrice (stockId INTEGER NOT NULL, price REAL NOT NULL, timestamp INTEGER NOT NULL, PRIMARY KEY (stockId, timestamp));")
-
-        # hardcoded
-        self.insert_stock("Apple", "AAPL")
-        self.insert_stock("Alphabet", "GOOG")
-        self.insert_stock("Microsoft", "MSFT")
-        print("StockDB initialised")
 
     def addStock(self, stock):
         self.__commit(f"INSERT INTO Stock (stockTicker, stockName) VALUES ('{stock.getTicker()}', '{stock.getName()}');")
@@ -50,24 +44,38 @@ class StockManager:
         return stocks
 
     def updatePrices(self):
-        start = self.__readOne("SELECT MAX(timestamp) FROM StockPrice;")
+        start = self.__readOne("SELECT MAX(timestamp) FROM StockPrice;")[0]
         
         if start == None:
-            start = datetime.fromisocalendar(2026, 1, 1).timestamp()
+            start = START
         end = datetime.now().timestamp()
 
         stocks = self.getStocks()
         data = market.download(stocks, start, end)
 
         for d in data:
-            self.cursor.execute(f"INSERT OR IGNORE INTO StockPrice (stockId, price, timestamp) VALUES ('{d.getStockId()}', '{d.getPrice()}', '{d.getTimestamp()}');") 
+            self.__cursor.execute(f"INSERT OR IGNORE INTO StockPrice (stockId, price, timestamp) VALUES ('{d.getStockId()}', '{d.getPrice()}', '{d.getTimestamp()}');") 
 
-        self.connection.commit()
+        self.__connection.commit()
 
     def getPriceNow(self, id):
-        price = self.__readOne(f"SELECT price FROM StockPrice WHERE stockId='{id}' ORDER BY timestamp DESC LIMIT 1;")
-        return price # to do return object
+        price = self.__readOne(f"SELECT timestamp, price FROM StockPrice WHERE stockId='{id}' ORDER BY timestamp DESC LIMIT 1;")
+        return market.StockPrice(price[0], id, price[1])
 
     def getPrices(self, id, start, end):
-        prices = self.__readAll(f"SELECT price, timestamp FROM StockPrice WHERE stockId='{id}' AND timestamp>='{start}' AND timestamp<='{end}';")
-        return prices # to do object list 
+        prices = self.__readAll(f"SELECT timestamp, price FROM StockPrice WHERE stockId='{id}' AND timestamp>='{start}' AND timestamp<='{end}';")
+        return [market.StockPrice(x[0], id, x[1]) for x in prices]
+
+    def initializeDatabase(self):
+        self.__commit("CREATE TABLE Stock (stockId INTEGER PRIMARY KEY AUTOINCREMENT, stockTicker TEXT NOT NULL UNIQUE, stockName TEXT NOT NULL UNIQUE);")
+        self.__commit("CREATE TABLE StockPrice (stockId INTEGER NOT NULL, price REAL NOT NULL, timestamp INTEGER NOT NULL, PRIMARY KEY (stockId, timestamp), CONSTRAINT fk_stockId FOREIGN KEY (stockId) REFERENCES Stock(stockId));")        
+
+        stock_db.addStock(market.Stock(None, "Apple Inc", "AAPL"))
+        stock_db.addStock(market.Stock(None, "Alphabet Inc Class C", "GOOG"))
+        stock_db.addStock(market.Stock(None, "Microsoft Corp", "MSFT"))
+        stock_db.addStock(market.Stock(None, "Amazon", "AMZN"))
+        stock_db.addStock(market.Stock(None, "Advanced Micro Devices Inc", "AMD"))
+        stock_db.addStock(market.Stock(None, "NVIDIA Corp", "NVDA"))
+        stock_db.addStock(market.Stock(None, "Tesla Inc", "TSLA"))
+
+        print("StockDB initialised")
