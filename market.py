@@ -3,7 +3,7 @@ import logging
 from datetime import datetime, timedelta, date
 
 class Stock:
-    def __init__(self, id, name, ticker):
+    def __init__(self, id: int, name: str, ticker: str):
         self.__id = id
         self.__name = name
         self.__ticker = ticker
@@ -18,7 +18,7 @@ class Stock:
         return self.__ticker
 
 class StockPrice:
-    def __init__(self, timestamp, stockId, price):
+    def __init__(self, timestamp: int, stockId: int, price: float):
         self.__timestamp = timestamp
         self.__stockId = stockId
         self.__price = price
@@ -35,15 +35,15 @@ class StockPrice:
 
 logging.getLogger("yfinance").setLevel(logging.CRITICAL)
 
-def downloadOne(stock, day):
+def downloadOne(stock: Stock, day: str):
     next_day = (date.fromisoformat(day) + timedelta(days=1)).isoformat()
     data = yfinance.download(stock.getTicker(), start=day, end=next_day, interval="1m",prepost=True, progress=False)
-    if data.empty: return []
+    if data is None or data.empty: return []
 
     data = data["Close"].reset_index()
     data["Timestamp"] = data["Datetime"].astype("int64")
 
-    result = []
+    result: list[StockPrice] = []
 
     series = data[["Timestamp", stock.getTicker()]]
     for _, row in series.iterrows():
@@ -52,19 +52,19 @@ def downloadOne(stock, day):
 
     return result
 
-def download(stocks, start, end):
-    start = datetime.fromtimestamp(start)
-    end = datetime.fromtimestamp(end)
-    delta = end - start
-    dates = [(start + timedelta(days=i)).date().isoformat() for i in range(delta.days + 1)]
+def download(stocks: list[Stock], start: int, end: int):
+    startDate = datetime.fromtimestamp(start)
+    endDate = datetime.fromtimestamp(end)
+    delta = endDate - startDate
+    dates = [(startDate + timedelta(days=i)).date().isoformat() for i in range(delta.days + 1)]
 
-    data = []
+    data: list[StockPrice] = []
     for date in dates:
-        print("Donwloading", date)
+        print("Downloading", date)
         for stock in stocks:
             try:
                 data.extend(downloadOne(stock, date))
-            except:
-                pass
+            except Exception as e:
+                print("Exception while downloading prices:", e)
 
     return data

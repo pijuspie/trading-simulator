@@ -1,82 +1,63 @@
-import sqlite3
 from datetime import datetime
-import market
+from market import Stock, StockPrice, download
+from database import Database
 
-START = datetime.fromisocalendar(2026, 30, 1).timestamp()
-
-stock_manager = None
-
-def init_stock_manager(path):
-    global stock_manager
-    stock_manager = StockManager(path)
-
-def get_stock_manager():
-    global stock_manager
-    return stock_manager
+START = datetime.fromisocalendar(2026, 1, 1).timestamp()
 
 class StockManager:
-    def __init__(self, path):
-        self.__path = path
-        self.__connection = sqlite3.connect(path)
-        self.__cursor = self.__connection.cursor()
+    def addStock(self, name: str, ticker: str):
+        self.__db.cursor.execute("INSERT OR IGNORE INTO Stock (stockTicker, stockName) VALUES (?, ?);", (ticker, name))
+        self.__db.connection.commit()
 
-    def __commit(self, sql):
-        self.__cursor.execute(sql)
-        self.__connection.commit()
-
-    def __readOne(self, sql):
-        self.__cursor.execute(sql)
-        return self.__cursor.fetchone()
-
-    def __readAll(self, sql):
-        self.__cursor.execute(sql)
-        return self.__cursor.fetchall()
-
-    def addStock(self, stock):
-        self.__commit(f"INSERT INTO Stock (stockTicker, stockName) VALUES ('{stock.getTicker()}', '{stock.getName()}');")
-
-    def removeStock(self, id):
-        self.__commit(f"DELETE FROM Stock WHERE stockId='{id}';")
+    def removeStock(self, id: int):
+        self.__db.cursor.execute("DELETE FROM Stock WHERE stockId = ?;", (id,))
+        self.__db.connection.commit()
 
     def getStocks(self):
-        stocks = self.__readAll("SELECT * FROM Stock;")
-        stocks = [market.Stock(int(x[0]), x[2], x[1]) for x in stocks]
+        stocks = self.__db.fetchall("SELECT stockId, stockName, stockTicker FROM Stock;")
+        stocks = [Stock(int(x[0]), str(x[1]), str(x[2])) for x in stocks]
         return stocks
 
     def updatePrices(self):
-        start = self.__readOne("SELECT MAX(timestamp) FROM StockPrice;")[0]
-        
-        if start == None:
-            start = START
+        res = self.__db.fetchone("SELECT MAX(timestamp) FROM StockPrice;")
+
+        start = START
+        if res is not None and res[0] is not None: 
+            start = res[0]
         end = datetime.now().timestamp()
 
         stocks = self.getStocks()
-        data = market.download(stocks, start, end)
+        data = download(stocks, int(start), int(end))
 
-        for d in data:
-            self.__cursor.execute(f"INSERT OR IGNORE INTO StockPrice (stockId, price, timestamp) VALUES ('{d.getStockId()}', '{d.getPrice()}', '{d.getTimestamp()}');") 
+        self.__db.cursor.executemany(
+            "INSERT OR IGNORE INTO StockPrice (stockId, price, timestamp) VALUES (?, ?, ?);",
+            [(d.getStockId(), d.getPrice(), d.getTimestamp()) for d in data]
+        )
 
-        self.__connection.commit()
+        self.__db.connection.commit()
 
-    def getPriceNow(self, id):
-        price = self.__readOne(f"SELECT timestamp, price FROM StockPrice WHERE stockId='{id}' ORDER BY timestamp DESC LIMIT 1;")
-        return market.StockPrice(price[0], id, price[1])
+    def getPriceNow(self, id: int):
+        self.__db.cursor.execute("SELECT timestamp, price FROM StockPrice WHERE stockId = ? ORDER BY timestamp DESC LIMIT 1;", (id,))
+        price = self.__db.cursor.fetchone()
+        return StockPrice(int(price[0]), id, float(price[1]))
 
-    def getPrices(self, id, start, end):
-        prices = self.__readAll(f"SELECT timestamp, price FROM StockPrice WHERE stockId='{id}' AND timestamp>='{start}' AND timestamp<='{end}';")
-        return [market.StockPrice(x[0], id, x[1]) for x in prices]
+    def getPrices(self, id: int, start: int, end: int):
+        self.__db.cursor.execute("SELECT timestamp, price FROM StockPrice WHERE stockId = ? AND timestamp >= ? AND timestamp <= ?;", (id, start, end))
+        prices = self.__db.cursor.fetchall()
+        return [StockPrice(int(x[0]), id, float(x[1])) for x in prices]
 
-    def initializeDatabase(self):
-        self.__commit("""
-            CREATE TABLE Stock (
+    def __init__(self, db: Database):
+        self.__db = db
+        self.__db.commit("""
+            CREATE TABLE IF NOT EXISTS Stock (
                 stockId INTEGER PRIMARY KEY AUTOINCREMENT,
                 stockTicker TEXT NOT NULL UNIQUE,
                 stockName TEXT NOT NULL UNIQUE
             );
         """)
 
-        self.__commit("""
-            CREATE TABLE StockPrice (
+        self.__db.commit("""
+            CREATE TABLE IF NOT EXISTS StockPrice (
                 stockId INTEGER NOT NULL,
                 price REAL NOT NULL, timestamp INTEGER NOT NULL,
                 PRIMARY KEY (stockId, timestamp),
@@ -84,12 +65,21 @@ class StockManager:
             );
         """)        
 
-        stock_manager.addStock(market.Stock(None, "Apple Inc", "AAPL"))
-        stock_manager.addStock(market.Stock(None, "Alphabet Inc Class C", "GOOG"))
-        stock_manager.addStock(market.Stock(None, "Microsoft Corp", "MSFT"))
-        stock_manager.addStock(market.Stock(None, "Amazon", "AMZN"))
-        stock_manager.addStock(market.Stock(None, "Advanced Micro Devices Inc", "AMD"))
-        stock_manager.addStock(market.Stock(None, "NVIDIA Corp", "NVDA"))
-        stock_manager.addStock(market.Stock(None, "Tesla Inc", "TSLA"))
+        self.addStock("Apple Inc", "AAPL")
+        self.addStock("Alphabet Inc Class C", "GOOG")
+        self.addStock("Microsoft Corp", "MSFT")
+        self.addStock("Amazon", "AMZN")
+        self.addStock("Advanced Micro Devices Inc", "AMD")
+        self.addStock("NVIDIA Corp", "NVDA")
+        self.addStock("Tesla Inc", "TSLA")
 
-        print("StockDB initialised")
+stockManager: StockManager | None = None
+
+def initializeStockManager(db: Database):
+    global stockManager
+    stockManager = StockManager(db)
+    return stockManager
+
+def getStockManager():
+    global stockManager
+    return stockManager

@@ -1,13 +1,9 @@
-from stocks import init_stock_manager, get_stock_manager
-from users import init_user_manager, get_user_manager
+from stocks import initializeStockManager
+from users import initializeUserManager
+from database import Database
 
-init_stock_manager("database.db")
-stock_manager = get_stock_manager()
-# stock_manager.initializeDatabase()
-# stock_manager.updatePrices()
+db = Database("database.db")
+stockManager = initializeStockManager(db)
+userManager = initializeUserManager(db)
 
-init_user_manager("database.db")
-user_manager = get_user_manager()
-# user_manager.initializeDatabase()
-
-
+stockManager.updatePrices()
