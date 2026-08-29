@@ -2,17 +2,17 @@ import sqlite3
 from datetime import datetime
 import market
 
-START = datetime.fromisocalendar(2026, 35, 1).timestamp()
+START = datetime.fromisocalendar(2026, 30, 1).timestamp()
 
-stock_db = None
+stock_manager = None
 
-def init_stock_db(path):
-    global stock_db
-    stock_db = StockManager(path)
+def init_stock_manager(path):
+    global stock_manager
+    stock_manager = StockManager(path)
 
-def get_stock_db():
-    global stock_db
-    return stock_db
+def get_stock_manager():
+    global stock_manager
+    return stock_manager
 
 class StockManager:
     def __init__(self, path):
@@ -67,15 +67,29 @@ class StockManager:
         return [market.StockPrice(x[0], id, x[1]) for x in prices]
 
     def initializeDatabase(self):
-        self.__commit("CREATE TABLE Stock (stockId INTEGER PRIMARY KEY AUTOINCREMENT, stockTicker TEXT NOT NULL UNIQUE, stockName TEXT NOT NULL UNIQUE);")
-        self.__commit("CREATE TABLE StockPrice (stockId INTEGER NOT NULL, price REAL NOT NULL, timestamp INTEGER NOT NULL, PRIMARY KEY (stockId, timestamp), CONSTRAINT fk_stockId FOREIGN KEY (stockId) REFERENCES Stock(stockId));")        
+        self.__commit("""
+            CREATE TABLE Stock (
+                stockId INTEGER PRIMARY KEY AUTOINCREMENT,
+                stockTicker TEXT NOT NULL UNIQUE,
+                stockName TEXT NOT NULL UNIQUE
+            );
+        """)
 
-        stock_db.addStock(market.Stock(None, "Apple Inc", "AAPL"))
-        stock_db.addStock(market.Stock(None, "Alphabet Inc Class C", "GOOG"))
-        stock_db.addStock(market.Stock(None, "Microsoft Corp", "MSFT"))
-        stock_db.addStock(market.Stock(None, "Amazon", "AMZN"))
-        stock_db.addStock(market.Stock(None, "Advanced Micro Devices Inc", "AMD"))
-        stock_db.addStock(market.Stock(None, "NVIDIA Corp", "NVDA"))
-        stock_db.addStock(market.Stock(None, "Tesla Inc", "TSLA"))
+        self.__commit("""
+            CREATE TABLE StockPrice (
+                stockId INTEGER NOT NULL,
+                price REAL NOT NULL, timestamp INTEGER NOT NULL,
+                PRIMARY KEY (stockId, timestamp),
+                CONSTRAINT fk_stockId FOREIGN KEY (stockId) REFERENCES Stock(stockId)
+            );
+        """)        
+
+        stock_manager.addStock(market.Stock(None, "Apple Inc", "AAPL"))
+        stock_manager.addStock(market.Stock(None, "Alphabet Inc Class C", "GOOG"))
+        stock_manager.addStock(market.Stock(None, "Microsoft Corp", "MSFT"))
+        stock_manager.addStock(market.Stock(None, "Amazon", "AMZN"))
+        stock_manager.addStock(market.Stock(None, "Advanced Micro Devices Inc", "AMD"))
+        stock_manager.addStock(market.Stock(None, "NVIDIA Corp", "NVDA"))
+        stock_manager.addStock(market.Stock(None, "Tesla Inc", "TSLA"))
 
         print("StockDB initialised")
