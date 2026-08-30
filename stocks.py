@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from market import Stock, StockPrice, download
 from database import Database
 
@@ -46,8 +46,46 @@ class StockManager:
         price = self.__db.cursor.fetchone()
         return StockPrice(int(price[0]), id, float(price[1]))
 
-    def getPrices(self, id: int, start: int, end: int):
+    def getPrices(self, id: int, interval: str):
+        start = datetime.now()
+        minutes = 5
+        if interval == "1day":
+            start -= timedelta(days=1)
+        elif interval == "1week":
+            start -= timedelta(days=7)
+            minutes = 30
+        elif interval == "1month":
+            start -= timedelta(days=30)
+            minutes = 120
+        elif interval == "3months":
+            start -= timedelta(days=90)
+            minutes = 360
+        elif interval == "6months":
+            start -= timedelta(days=180)
+            minutes = 720
+        elif interval == "1year":
+            start -= timedelta(days=365)
+            minutes = 60*24
+        else:
+            return []
+
+        start = int(start.timestamp())
+        end = int(datetime.now().timestamp())
+
         self.__db.cursor.execute("SELECT timestamp, price FROM StockPrice WHERE stockId = ? AND timestamp >= ? AND timestamp <= ?;", (id, start, end))
+        self.__db.cursor.execute("""
+            SELECT timestamp, price
+            FROM StockPrice
+            WHERE stockId = ?
+            AND timestamp IN (
+                SELECT MAX(timestamp)
+                FROM StockPrice
+                WHERE stockId = ?
+                AND timestamp >= ?
+                AND timestamp <= ?
+                GROUP BY timestamp / ?
+            );
+        """, (id, id, start, end, minutes*60))
         prices = self.__db.cursor.fetchall()
         return [StockPrice(int(x[0]), id, float(x[1])) for x in prices]     
 

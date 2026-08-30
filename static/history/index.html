@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Simulator | Stock History</title>
+
+    <link rel="stylesheet" href="/main.css">
+</head>
+
+<body>
+    <header>
+        <h1>Trading Simulator</h1>
+        <nav>
+            <a href="/">Stocks</a>
+            <a href="/history" class="active">History</a>
+            <a href="/signup">Sign up</a>
+            <a href="/login">Log in</a>
+        </nav>
+    </header>
+
+    <main>
+        <h2>Stock history</h2>
+        <form onsubmit="formSubmit(event)">
+            <input placeholder="Stock ticker" id="ticker" />
+            <select name="interval">
+                <option value="1day">1 day</option>
+                <option value="1week">1 week</option>
+                <option value="1month" selected>1 month</option>
+                <option value="3months">3 months</option>
+                <option value="6months">6 months</option>
+                <option value="1year">1 year</option>
+            </select>
+            <button type="submit">Show</button>
+            <div id="error"></div>
+        </form>
+        <canvas id="chart"></canvas>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        function formSubmit(event) {
+            event.preventDefault();
+            const ticker = event.target[0].value;
+            const interval = event.target[1].value;
+            if (ticker == "") return;
+            show(ticker, interval);
+        }
+
+        const ctx = document.getElementById("chart");
+        const chart = new Chart(ctx, {
+            type: "line",
+            data: { datasets: [{ label: "Price" }] },
+            options: {
+                borderWidth: 3,
+                pointRadius: 0,
+                pointHitRadius: 15,
+            }
+        });
+
+        async function show(ticker, interval) {
+            const response = await fetch("/api/history?ticker=" + ticker + "&interval=" + interval);
+            if (response.status == 404) {
+                document.getElementById("error").innerText = "Stock not found";
+            } else if (response.status == 500) {
+                document.getElementById("error").innerText = "Internal server error";
+            } else {
+                const data = await response.json();
+                chart.data.labels = data.prices.map(p => {
+                    return new Date(p.timestamp * 1000).toLocaleString("en-GB", {
+                        day: "2-digit",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit"
+                    });
+                });
+                chart.data.datasets[0].data = data.prices.map(p => p.price);
+                chart.update();
+            }
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        const stock = params.get("stock");
+
+        if (stock != null && stock != "") {
+            document.getElementById("ticker").value = stock;
+            show(stock, "1month");
+        }
+    </script>
+</body>
+
+</html>
