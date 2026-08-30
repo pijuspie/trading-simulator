@@ -1,13 +1,13 @@
 import os
-from datetime import datetime, timedelta
-from flask import Flask, send_from_directory, abort, jsonify, request
+from flask import Flask, send_from_directory, abort, jsonify, request, session
+from werkzeug.security import generate_password_hash, check_password_hash
 from stocks import StockManager
 from users import UserManager
-
 
 STATIC = "static"
 
 app = Flask(__name__, static_folder=STATIC)
+app.secret_key = "abra ka dabra"
 
 @app.get("/api/stocks")
 def get_stocks():
@@ -30,7 +30,7 @@ def get_stock_history():
     ticker = request.args.get("ticker")
     interval = request.args.get("interval")
     if ticker is None or interval is None:
-        abort(500)
+        return "Internal server error", 500
 
     stockManager = StockManager() 
     stocks = stockManager.getStocks()
@@ -41,7 +41,7 @@ def get_stock_history():
             stock = s
 
     if stock is None:
-        abort(404)
+        return "Stock not found", 404
 
     prices = stockManager.getPrices(stock.getId(), interval)
     stockManager.closeDB()
@@ -52,14 +52,54 @@ def get_stock_history():
 
     return jsonify(jsonObject)
 
+@app.post("/api/login")
+def post_login():
+    credentials = request.get_json()
+    username = credentials["username"]
+    password = credentials["password"]
+
+    userManager = UserManager() 
+    user = userManager.getUser(username)
+    if user is None:
+        return "User not found", 401
+
+    if not check_password_hash(user.getPasswordHash(), password):
+        return "Incorrect password", 401
+
+    session["userId"] = user.getId()
+    return "Successfully logged in", 200
+
+@app.post("/api/signup")
+def post_signup():
+    credentials = request.get_json()
+    username = credentials["username"]
+    email = credentials["email"]
+    password = credentials["password"]
+
+    userManager = UserManager() 
+    if userManager.checkIfUserExists(username, email):
+        return "Username or email already exists", 409
+
+    passwordHash = generate_password_hash(password)
+    userManager.addUser(username, email, passwordHash)
+    user = userManager.getUser(username)
+    if user is None:
+        return "Internal server error", 500
+
+    session["userId"] = user.getId()
+    return "Successfully signed up", 200      
+
+@app.get("/api/logout")
+def post_logout():
+    session.pop("userId", None)
+    return "Successfully logged out", 200      
+
 @app.route("/")
 def home():
     return send_from_directory(STATIC, "index.html")
 
 @app.route("/<path:path>")
 def serve_static(path):
-    print(app.url_map)
-
     fullPath = os.path.join(STATIC, path)
     if os.path.isfile(fullPath):
         return send_from_directory(STATIC, path)

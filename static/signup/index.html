@@ -1,1 +1,69 @@
-Signup
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Simulator | Sign Up</title>
+
+    <link rel="stylesheet" href="/main.css">
+</head>
+
+<body>
+    <header>
+        <h1>Trading Simulator</h1>
+        <nav>
+            <a href="/">Stocks</a>
+            <a href="/history">History</a>
+            <a href="/signup" class="active">Sign up</a>
+            <a href="/login">Log in</a>
+        </nav>
+    </header>
+
+    <main>
+        <h2>Sign Up</h2>
+        <form onsubmit="signup(event)">
+            <label>Username</label>
+            <input name="username" type="text" />
+            <label>Email</label>
+            <input name="email" type="email" />
+            <label>Password</label>
+            <input name="password" type="password" />
+            <button type="submit">Confirm</button>
+            <div id="error"></div>
+        </form>
+        <div>If you already have an account, log in <a href="/login">here</a></div>
+    </main>
+
+    <script>
+        async function request(username, email, password) {
+            const body = { username: username, email: email, password: password };
+
+            const response = await fetch("/api/signup", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(body)
+            });
+
+            if (!response.ok) {
+                const message = await response.text()
+                document.getElementById("error").innerText = message;
+            } else {
+                window.location.href = "/projects";
+            }
+        }
+
+        function signup(event) {
+            event.preventDefault();
+            const username = event.target[0].value;
+            const email = event.target[1].value;
+            const password = event.target[2].value;
+            request(username, email, password)
+        }
+
+    </script>
+</body>
+
+</html>

@@ -1,8 +1,8 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from market import Stock, StockPrice, downloadAdjusted
 from database import Database
 
-START = datetime.fromisocalendar(2026, 1, 1)
+START = date.fromisocalendar(2026, 1, 1)
 
 class StockManager:
     def __init__(self):
@@ -28,7 +28,7 @@ class StockManager:
 
         start = START
         if res is not None and res[0] is not None: 
-            start = datetime.fromtimestamp(res[0])
+            start = datetime.fromtimestamp(res[0]).date()
 
         stocks = self.getStocks()
         data = downloadAdjusted(stocks, start)

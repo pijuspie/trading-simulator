@@ -1,1 +1,66 @@
-Login
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Simulator | Log In</title>
+
+    <link rel="stylesheet" href="/main.css">
+</head>
+
+<body>
+    <header>
+        <h1>Trading Simulator</h1>
+        <nav>
+            <a href="/">Stocks</a>
+            <a href="/history">History</a>
+            <a href="/signup">Sign up</a>
+            <a href="/login" class="active">Log in</a>
+        </nav>
+    </header>
+
+    <main>
+        <h2>Log In</h2>
+        <form onsubmit="login(event)">
+            <label>Username</label>
+            <input name="username" type="text" />
+            <label>Password</label>
+            <input name="password" type="password" />
+            <button type="submit">Log in</button>
+            <div id="error"></div>
+        </form>
+        <div>If you do not have an account, sign up <a href="/signup">here</a></div>
+    </main>
+
+    <script>
+        async function request(username, password) {
+            const body = { username: username, password: password };
+
+            const response = await fetch("/api/login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(body)
+            });
+
+            if (!response.ok) {
+                const message = await response.text()
+                document.getElementById("error").innerText = message;
+            } else {
+                window.location.href = "/projects";
+            }
+        }
+
+        function login(event) {
+            event.preventDefault();
+            const username = event.target[0].value;
+            const password = event.target[1].value;
+            request(username, password)
+        }
+
+    </script>
+</body>
+
+</html>

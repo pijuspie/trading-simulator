@@ -81,10 +81,17 @@ class UserManager:
         self.__db.cursor.execute("INSERT INTO User (username, email, passwordHash) VALUES (?, ?, ?);", (name, email, passwordHash))
         self.__db.connection.commit()
 
-    def getUser(self, name: str, passwordHash: str):
-        self.__db.cursor.execute("SELECT userId, username, email, passwordHash FROM User WHERE username = ? AND passwordHash = ?;", (name, passwordHash))
+    def getUser(self, name: str):
+        self.__db.cursor.execute("SELECT userId, username, email, passwordHash FROM User WHERE username = ?;", (name,))
         user = self.__db.cursor.fetchone()
+        if user is None:
+            return None
         return User(int(user[0]), str(user[1]), str(user[2]), str(user[3]))
+
+    def checkIfUserExists(self, name: str, email: str):
+        self.__db.cursor.execute("SELECT userId FROM User WHERE username = ? OR email = ?;", (name, email))
+        users = self.__db.cursor.fetchall()
+        return len(users) > 0
 
     def getUserById(self, id: int):
         self.__db.cursor.execute("SELECT userId, username, email, passwordHash FROM User WHERE userId = ?;", (id,))
