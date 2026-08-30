@@ -1,9 +1,8 @@
-from stocks import initializeStockManager
-from users import initializeUserManager
-from database import Database
+import database
+import stocks
+from app import app
 
-db = Database("database.db")
-stockManager = initializeStockManager(db)
-userManager = initializeUserManager(db)
+database.initialize()
+stocks.initialize()
 
-stockManager.updatePrices()
+app.run()

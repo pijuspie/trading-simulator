@@ -74,6 +74,9 @@ class StockCertificate:
         return self.__status    
 
 class UserManager:
+    def __init__(self):
+        self.__db = Database()
+
     def addUser(self, name: str, email: str, passwordHash: str):
         self.__db.cursor.execute("INSERT INTO User (username, email, passwordHash) VALUES (?, ?, ?);", (name, email, passwordHash))
         self.__db.connection.commit()
@@ -131,61 +134,5 @@ class UserManager:
         certificates = self.__db.cursor.fetchall()
         return [StockCertificate(int(c[0]), int(c[1]), int(c[2]), int(c[3]), float(c[4]), float(c[5]), int(c[6]), str(c[7])) for c in certificates]
 
-    def __init__(self, db: Database):
-        # run after Stock Manager has initialized database
-        self.__db = db
-        
-        self.__db.commit("""
-            CREATE TABLE IF NOT EXISTS User (
-                userId INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT NOT NULL UNIQUE,
-                email TEXT NOT NULL UNIQUE,
-                passwordHash TEXT NOT NULL
-            );
-        """)
-        
-        self.__db.commit("""
-            CREATE TABLE IF NOT EXISTS Project (
-                projectId INTEGER PRIMARY KEY AUTOINCREMENT,
-                projectName TEXT NOT NULL UNIQUE,
-                initialBalance REAL NOT NULL,
-                balance REAL NOT NULL
-            );
-        """)
-        
-        self.__db.commit("""
-            CREATE TABLE IF NOT EXISTS UserProject (
-                userId INTEGER NOT NULL,
-                projectId INTEGER NOT NULL,
-                PRIMARY KEY (userId, projectId),
-                CONSTRAINT fk_userId FOREIGN KEY (userId) REFERENCES User(userId),
-                CONSTRAINT fk_projectId FOREIGN KEY (projectId) REFERENCES Project(projectId)
-            );
-        """)
-        
-        self.__db.commit("""
-            CREATE TABLE IF NOT EXISTS StockCertificate (
-                certificateId INTEGER PRIMARY KEY AUTOINCREMENT,
-                userId INTEGER NOT NULL,
-                projectId INTEGER NOT NULL,
-                stockId INTEGER NOT NULL,
-                quantity REAL NOT NULL,
-                purchaseTimestamp INTEGER NOT NULL,
-                purchasePrice REAL NOT NULL,
-                certificateStatus TEXT NOT NULL,
-                CONSTRAINT fk_userId FOREIGN KEY (userId) REFERENCES User(userId),
-                CONSTRAINT fk_projectId FOREIGN KEY (projectId) REFERENCES Project(projectId),
-                CONSTRAINT fk_stockId FOREIGN KEY (stockId) REFERENCES Stock(stockId)
-            );
-        """)
-        
-userManager: (UserManager | None) = None
-
-def initializeUserManager(db: Database):
-    global userManager
-    userManager = UserManager(db)
-    return userManager
-
-def getUserManager():
-    global userManager
-    return userManager
+    def closeDB(self):
+        self.__db.close()

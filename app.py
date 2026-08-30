@@ -1,32 +1,43 @@
-from flask import Flask, send_from_directory, jsonify, redirect, request
+from flask import Flask, send_from_directory, abort, jsonify
+import os
+from stocks import StockManager
 
-# serve static pages
-# sign up
-# sign in
-# create update delete projects
-# buy sell stocks
+STATIC = "static"
 
-app = Flask(__name__, static_folder="static")
+app = Flask(__name__, static_folder=STATIC)
 
-@app.before_request
-def strip_index_html():
-    path = request.path
+@app.get("/api/stocks")
+def get_stocks():
+    stockManager = StockManager() 
+    if stockManager is None:
+        abort(500)
+      
+    stocks = stockManager.getStocks()
+    prices = [stockManager.getPriceNow(s.getId()).getPrice() for s in stocks]
 
-    if path.endswith("/index.html"):
-        new_path = path[:-10]
-        return redirect(new_path, code=301)
+    stockManager.closeDB()
 
-# @app.post("/api/signup")
-# def signup():
-#     data = request.json
+    jsonObject = []
+    for i in range(len(stocks)):
+        s = stocks[i]
+        jsonObject.append({"name": s.getName(), "ticker": s.getTicker(), "price": round(prices[i], 2), "change": round(float(0), 2)})
 
-@app.route("/", defaults={"path": ""})
+    return jsonify(jsonObject)
+
+@app.route("/")
+def home():
+    return send_from_directory(STATIC, "index.html")
+
 @app.route("/<path:path>")
 def serve_static(path):
-    try:
-        return send_from_directory(app.static_folder, path)
-    except:
-        try:
-            return send_from_directory(app.static_folder, path+"index.html")
-        except:
-            return "Page not found", 404
+    print(app.url_map)
+
+    fullPath = os.path.join(STATIC, path)
+    if os.path.isfile(fullPath):
+        return send_from_directory(STATIC, path)
+
+    indexPath = os.path.join(fullPath, "index.html")
+    if os.path.isfile(indexPath):
+        return send_from_directory(os.path.join(STATIC, path), "index.html")
+
+    abort(404)
