@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
-from market import Stock, StockPrice, download
+from market import Stock, StockPrice, downloadAdjusted
 from database import Database
 
-START = datetime.fromisocalendar(2026, 1, 1).timestamp()
+START = datetime.fromisocalendar(2026, 1, 1)
 
 class StockManager:
     def __init__(self):
@@ -28,11 +28,10 @@ class StockManager:
 
         start = START
         if res is not None and res[0] is not None: 
-            start = res[0]
-        end = datetime.now().timestamp()
+            start = datetime.fromtimestamp(res[0])
 
         stocks = self.getStocks()
-        data = download(stocks, int(start), int(end))
+        data = downloadAdjusted(stocks, start)
 
         self.__db.cursor.executemany(
             "INSERT OR IGNORE INTO StockPrice (stockId, price, timestamp) VALUES (?, ?, ?);",
@@ -64,7 +63,7 @@ class StockManager:
             start -= timedelta(days=180)
             minutes = 720
         elif interval == "1year":
-            start -= timedelta(days=365)
+            start -= timedelta(days=360)
             minutes = 60*24
         else:
             return []
@@ -72,7 +71,6 @@ class StockManager:
         start = int(start.timestamp())
         end = int(datetime.now().timestamp())
 
-        self.__db.cursor.execute("SELECT timestamp, price FROM StockPrice WHERE stockId = ? AND timestamp >= ? AND timestamp <= ?;", (id, start, end))
         self.__db.cursor.execute("""
             SELECT timestamp, price
             FROM StockPrice
@@ -87,7 +85,7 @@ class StockManager:
             );
         """, (id, id, start, end, minutes*60))
         prices = self.__db.cursor.fetchall()
-        return [StockPrice(int(x[0]), id, float(x[1])) for x in prices]     
+        return [StockPrice(int(x[0]), id, float(x[1])) for x in prices]      
 
     def closeDB(self):
         self.__db.close()
