@@ -102,6 +102,16 @@ class UserManager:
         self.__db.cursor.execute("DELETE FROM User WHERE userId = ?;", (id,))
         self.__db.connection.commit()
 
+    def getProject(self, id: int):
+        self.__db.cursor.execute("SELECT projectId, projectName, initialBalance, balance FROM Project WHERE projectId = ?;", (id,))
+        project = self.__db.cursor.fetchone()
+        return Project(int(project[0]), str(project[1]), float(project[2]), float(project[3]))
+
+    def getProjectByName(self, name: str):
+        self.__db.cursor.execute("SELECT projectId, projectName, initialBalance, balance FROM Project WHERE projectName = ?;", (name,))
+        project = self.__db.cursor.fetchone()
+        return Project(int(project[0]), str(project[1]), float(project[2]), float(project[3]))
+
     def addProject(self, name: str, initBalance: float):
         self.__db.cursor.execute("INSERT INTO Project (projectName, initialBalance, balance) VALUES (?, ?, ?);", (name, initBalance, initBalance))
         self.__db.connection.commit()

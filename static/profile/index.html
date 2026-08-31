@@ -1,1 +1,57 @@
-Profile
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Simulator | Profile</title>
+
+    <link rel="stylesheet" href="/main.css">
+</head>
+
+<body>
+    <header>
+        <h1>Trading Simulator</h1>
+        <nav>
+            <a href="/">Stocks</a>
+            <a href="/history">History</a>
+            <a href="/projects">Projects</a>
+            <a href="/profile" class="active">Profile</a>
+            <button type="button" onclick="logout()">Log out</button>
+        </nav>
+    </header>
+
+    <main>
+        <h2>Profile</h2>
+        <form>
+            <label>Username</label>
+            <input id="username" type="text" readonly />
+            <label>Email</label>
+            <input id="email" type="email" readonly />
+        </form>
+    </main>
+
+    <script>
+        async function logout() {
+            fetch("/api/logout")
+                .then(() => window.location.href = "/")
+                .catch(error => console.log(error));
+        }
+
+        async function requestProfile() {
+            try {
+                const response = await fetch("/api/profile");
+                if (response.status === 401) window.location.href = "/login";
+                const profile = await response.json();
+                document.getElementById("username").value = profile.username;
+                document.getElementById("email").value = profile.email;
+            } catch (error) {
+                console.log(error)
+            }
+        }
+
+        requestProfile();
+    </script>
+</body>
+
+</html>

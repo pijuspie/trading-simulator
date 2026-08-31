@@ -52,6 +52,11 @@ def get_stock_history():
 
     return jsonify(jsonObject)
 
+@app.get("/api/status")
+def get_status():
+    userId = session.get("userId")
+    return jsonify({ "loggedIn": userId is not None}), 200
+    
 @app.post("/api/login")
 def post_login():
     credentials = request.get_json()
@@ -90,9 +95,61 @@ def post_signup():
     return "Successfully signed up", 200      
 
 @app.get("/api/logout")
-def post_logout():
+def get_logout():
     session.pop("userId", None)
     return "Successfully logged out", 200      
+
+@app.get("/api/profile")
+def get_profile():
+    id = session.get("userId")
+    if id is None:
+        return "Unauthorized", 401
+
+    userManager = UserManager()
+    user = userManager.getUserById(id)
+    jsonObject = {"username": user.getName(), "email": user.getEmail() }
+    return jsonify(jsonObject), 200      
+
+@app.get("/api/projects")
+def get_projects():
+    id = session.get("userId")
+    if id is None:
+        return "Unauthorized", 401
+
+    userManager = UserManager()
+    projectIds = userManager.getProjects(id)
+
+    jsonObject = []
+    for projectId in projectIds:
+        project = userManager.getProject(projectId)
+        members = len(userManager.getUsers(projectId))
+        jsonObject.append({"name": project.getName(), "members": members, "id": projectId})
+    return jsonify(jsonObject), 200
+
+@app.post("/api/newproject")
+def post_new_project():
+    id = session.get("userId")
+    if id is None:
+        return "Unauthorized", 401
+    print("new project id:", id)
+
+    credentials = request.get_json()
+    name = credentials["name"]
+    initialBalance = credentials["initialBalance"]
+
+    if name is None or initialBalance is None:
+        return "Internal server error", 500
+    
+    userManager = UserManager()
+    user = userManager.getUserById(id)
+    if user is None:
+        return "Internal server error", 500
+
+    userManager.addProject(name, initialBalance)
+    project = userManager.getProjectByName(name)
+    userManager.addUserProject(id, project.getId())
+
+    return jsonify({"projectId": project.getId()}), 200  
 
 @app.route("/")
 def home():

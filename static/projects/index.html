@@ -1,1 +1,81 @@
-Projects
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Simulator | Project List</title>
+
+    <link rel="stylesheet" href="/main.css">
+</head>
+
+<body>
+    <header>
+        <h1>Trading Simulator</h1>
+        <nav>
+            <a href="/">Stocks</a>
+            <a href="/history">History</a>
+            <a href="/projects" class="active">Projects</a>
+            <a href="/profile">Profile</a>
+            <button type="button" onclick="logout()">Log out</button>
+        </nav>
+    </header>
+
+    <main>
+        <h2>Project list</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Project name</th>
+                    <th>Members</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="projects">
+            </tbody>
+        </table>
+    </main>
+
+    <template id="projectRow">
+        <tr>
+            <th></th>
+            <th></th>
+            <th><a href="">Inspect</a></th>
+        </tr>
+    </template>
+
+    <a href="/newproject">New</a>
+
+    <script>
+        async function logout() {
+            fetch("/api/logout")
+                .then(() => window.location.href = "/")
+                .catch(error => console.log(error));
+        }
+
+        async function requestProjects() {
+            try {
+                const response = await fetch("/api/projects");
+                if (response.status === 401) window.location.href = "/login";
+                const projects = await response.json();
+
+                const container = document.getElementById("projects");
+                const template = document.getElementById("projectRow");
+                projects.forEach(project => {
+                    const newRow = template.content.cloneNode(true);
+                    const cells = newRow.children[0].children;
+                    cells[0].textContent = project.name;
+                    cells[1].textContent = project.members;
+                    cells[2].children[0].setAttribute("href", "/project/?id=" + project.id);
+                    container.appendChild(newRow);
+                });
+            } catch (error) {
+                console.log(error)
+            }
+        }
+
+        requestProjects();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Simulator | New Project</title>
+
+    <link rel="stylesheet" href="/main.css">
+</head>
+
+<body>
+    <header>
+        <h1>Trading Simulator</h1>
+        <nav>
+            <a href="/">Stocks</a>
+            <a href="/history">History</a>
+            <a href="/projects">Projects</a>
+            <a href="/profile">Profile</a>
+            <button type="button" onclick="logout()">Log out</button>
+        </nav>
+    </header>
+
+    <main>
+        <h2>New project</h2>
+        <form onsubmit="newproject(event)">
+            <label>Name</label>
+            <input name="name" type="text" />
+            <label>Initial balance</label>
+            <input name="balance" type="number" />
+            <button type="submit">Create</button>
+            <div id="error"></div>
+        </form>
+    </main>
+
+    <script>
+        async function logout() {
+            fetch("/api/logout")
+                .then(() => window.location.href = "/")
+                .catch(error => console.log(error));
+        }
+
+        async function request(name, initialBalance) {
+            const body = { name: name, initialBalance: initialBalance };
+
+            const response = await fetch("/api/newproject", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(body)
+            });
+
+            if (!response.ok) {
+                const message = await response.text()
+                document.getElementById("error").innerText = message;
+            } else {
+                const data = await response.json();
+                window.location.href = "/project/?id=" + data.projectId;
+            }
+        }
+
+        function newproject(event) {
+            event.preventDefault();
+            const name = event.target[0].value;
+            const initialBalance = Number(event.target[1].value);
+            request(name, initialBalance)
+        }
+    </script>
+</body>
+
+</html>

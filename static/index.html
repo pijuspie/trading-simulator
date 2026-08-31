@@ -12,11 +12,14 @@
 <body>
     <header>
         <h1>Trading Simulator</h1>
-        <nav>
+        <nav id="navbar">
             <a href="/" class="active">Stocks</a>
             <a href="/history">History</a>
             <a href="/signup">Sign up</a>
             <a href="/login">Log in</a>
+            <a href="/projects" class="hidden">Projects</a>
+            <a href="/profile" class="hidden">Profile</a>
+            <button type="button" onclick="logout()" class="hidden">Log out</button>
         </nav>
     </header>
 
@@ -87,7 +90,27 @@
             });
         }
 
+        async function checkStatus() {
+            const response = await fetch("/api/status");
+            const status = await response.json();
+            if (status.loggedIn) {
+                const links = document.getElementById("navbar").children;
+                links[2].classList.add("hidden");
+                links[3].classList.add("hidden");
+                links[4].classList.remove("hidden");
+                links[5].classList.remove("hidden");
+                links[6].classList.remove("hidden");
+            }
+        }
+
+        async function logout() {
+            fetch("/api/logout")
+                .then(() => window.location.href = "/")
+                .catch(error => console.log(error));
+        }
+
         downloadStocks();
+        checkStatus();
     </script>
 </body>
 
