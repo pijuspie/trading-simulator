@@ -175,12 +175,15 @@ def get_project():
         userManager.closeDB()
         return "Project not found", 404
 
-    jsonObject = {"name": project.getName(), "balance": project.getBalance(), "certificates": []}
+    jsonObject = {"name": project.getName(), "balance": round(project.getBalance(), 2), "certificates": []}
     certificates = userManager.getStockCertificates(projectId)
 
     stockManager = StockManager()
 
     for c in certificates:
+        if c.getStatus() == "CLOSED":
+            continue
+
         stock = stockManager.getStock(c.getStockId())
         owner = userManager.getUserById(c.getUserId())
 
@@ -193,7 +196,7 @@ def get_project():
         value = priceNow.getPrice() * c.getQuantity()
         change = (value/c.getPurchasePrice()-1)*100
 
-        certificateObject = {"ticker": stock.getTicker(), "name": stock.getName(), "owner": owner.getName(), "price": round(value, 2), "change": round(change, 2)}
+        certificateObject = {"id": c.getId(), "ticker": stock.getTicker(), "name": stock.getName(), "owner": owner.getName(), "price": round(value, 2), "change": round(change, 2)}
         jsonObject["certificates"].append(certificateObject)
 
     stockManager.closeDB()
@@ -271,6 +274,44 @@ def post_buy_stock():
     userManager.openStockCertificate(id, int(projectId), stock.getId(), quantity, value)
     userManager.closeDB()
 
+    return "Transaction successful", 200  
+
+@app.post("/api/sell")
+def post_sell_stock():
+    id = session.get("userId")
+    if id is None:
+        return "Unauthorized", 401
+
+    credentials = request.get_json()
+    certificateId = credentials["certificateId"]
+
+    if certificateId is None or certificateId == "":
+        return "Internal server error", 500
+    certificateId = int(certificateId)
+
+    userManager = UserManager()
+    certificate = userManager.getStockCertificate(certificateId)
+
+    if certificate is None:
+        userManager.closeDB()
+        return "Internal server error", 500
+
+    if certificate.getStatus() == "CLOSED":
+        userManager.closeDB()
+        return "The certificate is closed", 403
+
+    if certificate.getUserId() != id:
+        userManager.closeDB()
+        return "User is not the owner of the certificate", 403
+
+    stockManager = StockManager()
+    price = stockManager.getPriceNow(certificate.getStockId()).getPrice()
+    value = price * certificate.getQuantity()
+    stockManager.closeDB()
+
+    userManager.closeStockCertificate(certificateId, value)
+    userManager.closeDB()
+    
     return "Transaction successful", 200  
 
 @app.route("/")

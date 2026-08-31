@@ -49,7 +49,7 @@
             <th></th>
             <th></th>
             <th></th>
-            <th><a href="">Sell</a></th>
+            <th><button type="button" onclick="">Sell</button></th>
         </tr>
     </template>
 
@@ -87,12 +87,25 @@
                     cells[2].textContent = certificate.owner;
                     cells[3].textContent = certificate.change;
                     cells[4].textContent = certificate.price;
-                    cells[5].children[0].setAttribute("href", "/sell/?id=" + projectId);
+                    cells[5].children[0].setAttribute("onclick", "sell(" + certificate.id + ")");
                     container.appendChild(newRow);
                 });
             } catch (error) {
                 console.log(error)
             }
+        }
+
+        async function sell(certificateId) {
+            const response = await fetch("/api/sell", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ certificateId: certificateId })
+            });
+
+            if (response.status === 401) window.location.href = "/login";
+            if (response.ok) window.location.reload();
         }
 
         requestProjectInfo();

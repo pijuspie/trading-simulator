@@ -147,7 +147,16 @@ class UserManager:
         self.__db.cursor.execute("INSERT INTO StockCertificate (userId, projectId, stockId, quantity, purchaseTimestamp, purchasePrice, certificateStatus) VALUES (?, ?, ?, ?, ?, ?, ?);", (userId, projectId, stockId, quantity, purchaseTimestamp, purchasePrice, "OPEN"))
         self.__db.connection.commit()
 
-    def closeStockCertificate(self, certificateId: int):
+    def closeStockCertificate(self, certificateId: int, price: float):
+        self.__db.cursor.execute("""
+            UPDATE Project
+            SET balance = balance + ?
+            WHERE projectId = (
+                SELECT projectId
+                FROM StockCertificate
+                WHERE certificateId = ?
+            );
+        """, (price, certificateId))
         self.__db.cursor.execute("UPDATE StockCertificate SET certificateStatus = ? WHERE certificateId = ?;", ("CLOSED", certificateId))
         self.__db.connection.commit()
 
@@ -155,6 +164,13 @@ class UserManager:
         self.__db.cursor.execute("SELECT certificateId, userId, projectId, stockId, quantity, purchasePrice, purchaseTimestamp, certificateStatus FROM StockCertificate WHERE projectId = ?;", (projectId,))
         certificates = self.__db.cursor.fetchall()
         return [StockCertificate(int(c[0]), int(c[1]), int(c[2]), int(c[3]), float(c[4]), float(c[5]), int(c[6]), str(c[7])) for c in certificates]
+
+    def getStockCertificate(self, certificateId):
+        self.__db.cursor.execute("SELECT certificateId, userId, projectId, stockId, quantity, purchasePrice, purchaseTimestamp, certificateStatus FROM StockCertificate WHERE certificateId = ?;", (certificateId,))
+        c = self.__db.cursor.fetchone()
+        if c is None:
+            return None
+        return StockCertificate(int(c[0]), int(c[1]), int(c[2]), int(c[3]), float(c[4]), float(c[5]), int(c[6]), str(c[7]))
 
     def closeDB(self):
         self.__db.close()

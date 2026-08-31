@@ -105,7 +105,7 @@
             } else {
                 const stock = await response.json();
                 const price = quantity * stock.price;
-                document.getElementById("price").value = price;
+                document.getElementById("price").value = Math.round(price * 100) / 100;
                 document.getElementById("error").innerText = "";
             }
         }
