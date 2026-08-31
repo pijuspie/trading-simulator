@@ -1,4 +1,5 @@
 from database import Database
+from datetime import datetime
 
 class User:
     def __init__(self, id: int, name: str, email: str, passwordHash: str):
@@ -105,6 +106,8 @@ class UserManager:
     def getProject(self, id: int):
         self.__db.cursor.execute("SELECT projectId, projectName, initialBalance, balance FROM Project WHERE projectId = ?;", (id,))
         project = self.__db.cursor.fetchone()
+        if project is None:
+            return None
         return Project(int(project[0]), str(project[1]), float(project[2]), float(project[3]))
 
     def getProjectByName(self, name: str):
@@ -138,7 +141,9 @@ class UserManager:
         self.__db.cursor.execute("DELETE FROM UserProject WHERE userId = ? AND projectId = ?;", (userId, projectId))
         self.__db.connection.commit()
     
-    def openStockCertificate(self, userId: int, projectId: int, stockId: int, quantity: float, purchasePrice: float, purchaseTimestamp: int):
+    def openStockCertificate(self, userId: int, projectId: int, stockId: int, quantity: float, purchasePrice: float):
+        purchaseTimestamp = int(datetime.now().timestamp())
+        self.__db.cursor.execute("UPDATE Project SET balance = balance - ? WHERE projectId = ?;", (purchasePrice, projectId))
         self.__db.cursor.execute("INSERT INTO StockCertificate (userId, projectId, stockId, quantity, purchaseTimestamp, purchasePrice, certificateStatus) VALUES (?, ?, ?, ?, ?, ?, ?);", (userId, projectId, stockId, quantity, purchaseTimestamp, purchasePrice, "OPEN"))
         self.__db.connection.commit()
 

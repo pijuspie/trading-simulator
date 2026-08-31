@@ -63,10 +63,13 @@
         async function requestProjectInfo() {
             const params = new URLSearchParams(window.location.search);
             const projectId = params.get("id");
+            if (projectId === null || projectId === "") window.location.href = "/projects";
 
             try {
                 const response = await fetch("/api/project?id=" + projectId);
                 if (response.status === 401) window.location.href = "/login";
+                if (response.status === 404) window.location.href = "/projects";
+                if (!response.ok) return;
                 const project = await response.json();
 
                 document.getElementById("projectName").innerText = project.name;

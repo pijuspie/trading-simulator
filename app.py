@@ -25,6 +25,26 @@ def get_stocks():
 
     return jsonify(jsonObject)
 
+
+@app.get("/api/stock")
+def get_stock():
+    ticker = request.args.get("ticker")
+    if ticker is None:
+        return "Internal server error", 500
+
+    stockManager = StockManager() 
+
+    stock = stockManager.getStockByTicker(ticker)
+    if stock is None:
+        stockManager.closeDB()
+        return "Stock not found", 404
+
+    price = stockManager.getPriceNow(stock.getId()).getPrice()
+    stockManager.closeDB()
+
+    jsonObject = {"name": stock.getName(), "ticker": stock.getTicker(), "price": round(price, 2)}
+    return jsonify(jsonObject), 200
+
 @app.get("/api/history")
 def get_stock_history():
     ticker = request.args.get("ticker")
@@ -41,6 +61,7 @@ def get_stock_history():
             stock = s
 
     if stock is None:
+        stockManager.closeDB()
         return "Stock not found", 404
 
     prices = stockManager.getPrices(stock.getId(), interval)
@@ -65,6 +86,7 @@ def post_login():
 
     userManager = UserManager() 
     user = userManager.getUser(username)
+    userManager.closeDB()
     if user is None:
         return "User not found", 401
 
@@ -83,11 +105,13 @@ def post_signup():
 
     userManager = UserManager() 
     if userManager.checkIfUserExists(username, email):
+        userManager.closeDB()
         return "Username or email already exists", 409
 
     passwordHash = generate_password_hash(password)
     userManager.addUser(username, email, passwordHash)
     user = userManager.getUser(username)
+    userManager.closeDB()
     if user is None:
         return "Internal server error", 500
 
@@ -107,6 +131,7 @@ def get_profile():
 
     userManager = UserManager()
     user = userManager.getUserById(id)
+    userManager.closeDB()
     jsonObject = {"username": user.getName(), "email": user.getEmail() }
     return jsonify(jsonObject), 200      
 
@@ -122,8 +147,15 @@ def get_projects():
     jsonObject = []
     for projectId in projectIds:
         project = userManager.getProject(projectId)
+
+        if project is None:
+            userManager.closeDB()
+            return "Internal server error", 500
+
         members = len(userManager.getUsers(projectId))
         jsonObject.append({"name": project.getName(), "members": members, "id": projectId})
+
+    userManager.closeDB()
     return jsonify(jsonObject), 200
 
 @app.get("/api/project")
@@ -139,8 +171,11 @@ def get_project():
 
     userManager = UserManager()
     project = userManager.getProject(projectId)
+    if project is None:
+        userManager.closeDB()
+        return "Project not found", 404
 
-    jsonObject = {"name": project.getName(), "balance": project.getBalance(), "certificate": []}
+    jsonObject = {"name": project.getName(), "balance": project.getBalance(), "certificates": []}
     certificates = userManager.getStockCertificates(projectId)
 
     stockManager = StockManager()
@@ -149,12 +184,20 @@ def get_project():
         stock = stockManager.getStock(c.getStockId())
         owner = userManager.getUserById(c.getUserId())
 
+        if stock is None:
+            stockManager.closeDB()
+            userManager.closeDB()
+            return "Internal server error", 500
+
         priceNow = stockManager.getPriceNow(c.getStockId())
         value = priceNow.getPrice() * c.getQuantity()
-        change = value/c.getPurchasePrice()
+        change = (value/c.getPurchasePrice()-1)*100
 
-        certificateObject = {"ticker": stock.getTicker(), "name": stock.getName(), "owner": owner.getName(), "price": value, "change": change}
+        certificateObject = {"ticker": stock.getTicker(), "name": stock.getName(), "owner": owner.getName(), "price": round(value, 2), "change": round(change, 2)}
         jsonObject["certificates"].append(certificateObject)
+
+    stockManager.closeDB()
+    userManager.closeDB()
     return jsonify(jsonObject), 200
 
 @app.post("/api/newproject")
@@ -173,13 +216,62 @@ def post_new_project():
     userManager = UserManager()
     user = userManager.getUserById(id)
     if user is None:
+        userManager.closeDB()
         return "Internal server error", 500
 
     userManager.addProject(name, initialBalance)
     project = userManager.getProjectByName(name)
     userManager.addUserProject(id, project.getId())
+    userManager.closeDB()
 
     return jsonify({"projectId": project.getId()}), 200  
+
+@app.post("/api/buy")
+def post_buy_stock():
+    id = session.get("userId")
+    if id is None:
+        return "Unauthorized", 401
+
+    credentials = request.get_json()
+    projectId = credentials["projectId"]
+    ticker = credentials["ticker"]
+    quantity = credentials["quantity"]
+
+    if projectId is None or ticker is None or quantity is None:
+        return "Internal server error", 500
+
+    if projectId == "":
+        return "Internal server error", 500
+    projectId = int(projectId)
+
+    if quantity == "":
+        return "Invalid quantity", 409
+    quantity = float(quantity)
+
+    stockManager = StockManager()
+    stock = stockManager.getStockByTicker(ticker)
+    if stock is None:
+        stockManager.closeDB()
+        return "Stock not found", 404
+
+    price = stockManager.getPriceNow(stock.getId()).getPrice()
+    value = price * quantity
+    stockManager.closeDB()
+
+    userManager = UserManager()
+    project = userManager.getProject(projectId)
+    if project is None:
+        userManager.closeDB()
+        return "Internal server error", 500
+
+    if project.getBalance() < value:
+        userManager.closeDB()
+        return "Not enough balance", 409
+
+    userManager.openStockCertificate(id, int(projectId), stock.getId(), quantity, value)
+    userManager.closeDB()
+
+    return "Transaction successful", 200  
 
 @app.route("/")
 def home():

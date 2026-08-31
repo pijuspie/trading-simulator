@@ -22,9 +22,18 @@ class StockManager:
         stocks = [Stock(int(x[0]), str(x[1]), str(x[2])) for x in stocks]
         return stocks
 
+    def getStockByTicker(self, ticker: str):
+        self.__db.cursor.execute("SELECT stockId, stockName, stockTicker FROM Stock WHERE stockTicker = ?;", (ticker,))
+        stock = self.__db.cursor.fetchone()
+        if stock is None:
+            return None
+        return Stock(int(stock[0]), str(stock[1]), str(stock[2]))
+
     def getStock(self, id: int):
         self.__db.cursor.execute("SELECT stockId, stockName, stockTicker FROM Stock WHERE stockId = ?;", (id,))
         stock = self.__db.cursor.fetchone()
+        if stock is None:
+            return None
         return Stock(int(stock[0]), str(stock[1]), str(stock[2]))
 
     def updatePrices(self):

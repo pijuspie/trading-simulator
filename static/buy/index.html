@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Simulator | Project Buy Stocks</title>
+
+    <link rel="stylesheet" href="/main.css">
+</head>
+
+<body>
+    <header>
+        <h1>Trading Simulator</h1>
+        <nav>
+            <a href="/">Stocks</a>
+            <a href="/history">History</a>
+            <a href="/projects">Projects</a>
+            <a href="/profile">Profile</a>
+            <button type="button" onclick="logout()">Log out</button>
+        </nav>
+    </header>
+
+    <main>
+        <a href="/project" id="back">Back</a>
+        <h2>Buy Stock Certificates (Project: <span id="projectName"></span>)</h2>
+        <form onsubmit="buy(event)">
+            <label>Ticker</label>
+            <input id="ticker" type="text" onchange="calcPrice()" />
+            <label>Quantity</label>
+            <input id="quantity" type="number" step="any" onchange="calcPrice()" />
+            <label>Price (calculated automatically)</label>
+            <input id="price" type="number" readonly />
+            <button type="submit">Buy</button>
+            <div id="error"></div>
+        </form>
+    </main>
+
+    <script>
+        async function logout() {
+            fetch("/api/logout")
+                .then(() => window.location.href = "/")
+                .catch(error => console.log(error));
+        }
+
+        async function requestProjectInfo() {
+            const params = new URLSearchParams(window.location.search);
+            const projectId = params.get("projectId");
+            if (projectId === null || projectId === "") window.location.href = "/projects";
+
+            try {
+                const response = await fetch("/api/project?id=" + projectId);
+                if (response.status === 401) window.location.href = "/login";
+                if (response.status === 404) window.location.href = "/projects";
+                if (!response.ok) return;
+                const project = await response.json();
+
+                document.getElementById("projectName").innerText = project.name;
+                document.getElementById("back").href = "/project/?id=" + projectId;
+            } catch (error) {
+                console.log(error)
+            }
+        }
+
+        async function buyRequest(ticker, quantity) {
+            const params = new URLSearchParams(window.location.search);
+            const projectId = params.get("projectId");
+            if (projectId === null || projectId === "") window.location.href = "/projects";
+
+            const body = { ticker: ticker, quantity: quantity, projectId: projectId };
+
+            const response = await fetch("/api/buy", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(body)
+            });
+
+            if (response.status === 401) window.location.href = "/login";
+            if (!response.ok) {
+                const message = await response.text()
+                document.getElementById("error").innerText = message;
+            } else {
+                window.location.href = "/project/?id=" + projectId;
+            }
+        }
+
+        function buy(event) {
+            event.preventDefault();
+            const ticker = event.target[0].value;
+            const quantity = event.target[1].value;
+            buyRequest(ticker, quantity)
+        }
+
+        async function calcPrice() {
+            const ticker = document.getElementById("ticker").value;
+            const quantity = document.getElementById("quantity").value;
+
+            const response = await fetch("/api/stock?ticker=" + ticker);
+
+            if (!response.ok) {
+                const message = await response.text()
+                document.getElementById("error").innerText = message;
+            } else {
+                const stock = await response.json();
+                const price = quantity * stock.price;
+                document.getElementById("price").value = price;
+                document.getElementById("error").innerText = "";
+            }
+        }
+
+        requestProjectInfo();
+    </script>
+</body>
+
+</html>
