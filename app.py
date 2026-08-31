@@ -126,12 +126,42 @@ def get_projects():
         jsonObject.append({"name": project.getName(), "members": members, "id": projectId})
     return jsonify(jsonObject), 200
 
+@app.get("/api/project")
+def get_project():
+    id = session.get("userId")
+    if id is None:
+        return "Unauthorized", 401
+
+    projectId = request.args.get("id")
+    if projectId is None:
+        return "Internal server error", 500
+    projectId = int(projectId)
+
+    userManager = UserManager()
+    project = userManager.getProject(projectId)
+
+    jsonObject = {"name": project.getName(), "balance": project.getBalance(), "certificate": []}
+    certificates = userManager.getStockCertificates(projectId)
+
+    stockManager = StockManager()
+
+    for c in certificates:
+        stock = stockManager.getStock(c.getStockId())
+        owner = userManager.getUserById(c.getUserId())
+
+        priceNow = stockManager.getPriceNow(c.getStockId())
+        value = priceNow.getPrice() * c.getQuantity()
+        change = value/c.getPurchasePrice()
+
+        certificateObject = {"ticker": stock.getTicker(), "name": stock.getName(), "owner": owner.getName(), "price": value, "change": change}
+        jsonObject["certificates"].append(certificateObject)
+    return jsonify(jsonObject), 200
+
 @app.post("/api/newproject")
 def post_new_project():
     id = session.get("userId")
     if id is None:
         return "Unauthorized", 401
-    print("new project id:", id)
 
     credentials = request.get_json()
     name = credentials["name"]

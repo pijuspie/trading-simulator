@@ -22,6 +22,11 @@ class StockManager:
         stocks = [Stock(int(x[0]), str(x[1]), str(x[2])) for x in stocks]
         return stocks
 
+    def getStock(self, id: int):
+        self.__db.cursor.execute("SELECT stockId, stockName, stockTicker FROM Stock WHERE stockId = ?;", (id,))
+        stock = self.__db.cursor.fetchone()
+        return Stock(int(stock[0]), str(stock[1]), str(stock[2]))
+
     def updatePrices(self):
         self.__db.cursor.execute("SELECT MAX(timestamp) FROM StockPrice;")
         res = self.__db.cursor.fetchone()

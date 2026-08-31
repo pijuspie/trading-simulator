@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Simulator | Project Balance</title>
+
+    <link rel="stylesheet" href="/main.css">
+</head>
+
+<body>
+    <header>
+        <h1>Trading Simulator</h1>
+        <nav>
+            <a href="/">Stocks</a>
+            <a href="/history">History</a>
+            <a href="/projects">Projects</a>
+            <a href="/profile">Profile</a>
+            <button type="button" onclick="logout()">Log out</button>
+        </nav>
+    </header>
+
+    <main>
+        <h2>Project: <span id="projectName"></span></h2>
+        <a href="/buy" id="buy">Buy</a>
+        <a href="/settings" id="settings">Settings</a>
+        <p>Balance: <span id="balance"></span></p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Ticker</th>
+                    <th>Stock name</th>
+                    <th>Owner</th>
+                    <th>Change</th>
+                    <th>Price</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="certificates">
+            </tbody>
+        </table>
+    </main>
+
+    <template id="certificateRow">
+        <tr>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th><a href="">Sell</a></th>
+        </tr>
+    </template>
+
+    <script>
+        async function logout() {
+            fetch("/api/logout")
+                .then(() => window.location.href = "/")
+                .catch(error => console.log(error));
+        }
+
+        async function requestProjectInfo() {
+            const params = new URLSearchParams(window.location.search);
+            const projectId = params.get("id");
+
+            try {
+                const response = await fetch("/api/project?id=" + projectId);
+                if (response.status === 401) window.location.href = "/login";
+                const project = await response.json();
+
+                document.getElementById("projectName").innerText = project.name;
+                document.getElementById("buy").href = "/buy/?projectId=" + projectId;
+                document.getElementById("settings").href = "/settings/?projectId=" + projectId;
+                document.getElementById("balance").innerText = project.balance;
+
+                const container = document.getElementById("certificates");
+                const template = document.getElementById("certificateRow");
+                project.certificates.forEach(certificate => {
+                    const newRow = template.content.cloneNode(true);
+                    const cells = newRow.children[0].children;
+                    cells[0].textContent = certificate.ticker;
+                    cells[1].textContent = certificate.name;
+                    cells[2].textContent = certificate.owner;
+                    cells[3].textContent = certificate.change;
+                    cells[4].textContent = certificate.price;
+                    cells[5].children[0].setAttribute("href", "/sell/?id=" + projectId);
+                    container.appendChild(newRow);
+                });
+            } catch (error) {
+                console.log(error)
+            }
+        }
+
+        requestProjectInfo();
+    </script>
+</body>
+
+</html>
