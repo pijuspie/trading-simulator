@@ -1,3 +1,121 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+body {
+    margin: 0;
+    font-family: "Inter", sans-serif;
+    color: #333;
+    font-weight: 400;
+}
+
+button {
+    border: solid 1px grey;
+    padding: 0.5rem;
+    margin: 0;
+    background-color: transparent;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+}
+
+input,
+select {
+    border: solid 1px grey;
+    padding: 0.5rem;
+    margin: 0;
+    background-color: transparent;
+    font: inherit;
+    color: inherit;
+    outline: none;
+}
+
+h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+h2 {
+    font-size: 1.4rem;
+    font-weight: 500;
+}
+
+.block {
+    margin: 1rem 0;
+}
+
 .hidden {
     display: none;
+}
+
+.header {
+    border-bottom: 2px solid grey;
+}
+
+.header>div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 55rem;
+    margin: auto;
+}
+
+.header h1 {
+    padding: 0 1rem;
+}
+
+.header nav {
+    display: flex;
+    align-items: center;
+}
+
+.header nav a {
+    padding: 1rem;
+    color: inherit;
+    text-decoration: none;
+}
+
+.header nav a.active {
+    text-decoration: underline;
+}
+
+.header nav button {
+    padding: 1rem;
+    border: none;
+}
+
+.main>div {
+    max-width: 55rem;
+    box-sizing: border-box;
+    padding: 1rem;
+    margin: auto;
+}
+
+table {
+    width: 100%;
+    text-align: left;
+    border: 1px solid grey;
+    border-collapse: collapse;
+}
+
+th,
+td {
+    border: 1px solid grey;
+    padding: 0.5rem;
+}
+
+
+
+.form input {
+    display: block;
+    width: 100%;
+    max-width: 30rem;
+}
+
+.inspectButton {
+    width: 1%;
+    white-space: nowrap;
+}
+
+.inspectButton a {
+    color: inherit;
+    text-decoration: none;
 }

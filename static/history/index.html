@@ -10,35 +10,39 @@
 </head>
 
 <body>
-    <header>
-        <h1>Trading Simulator</h1>
-        <nav id="navbar">
-            <a href="/">Stocks</a>
-            <a href="/history" class="active">History</a>
-            <a href="/signup">Sign up</a>
-            <a href="/login">Log in</a>
-            <a href="/projects" class="hidden">Projects</a>
-            <a href="/profile" class="hidden">Profile</a>
-            <button type="button" onclick="logout()" class="hidden">Log out</button>
-        </nav>
+    <header class="header">
+        <div>
+            <h1>Trading Simulator</h1>
+            <nav id="navbar">
+                <a href="/">Stocks</a>
+                <a href="/history" class="active">History</a>
+                <a href="/signup">Sign up</a>
+                <a href="/login">Log in</a>
+                <a href="/projects" class="hidden">Projects</a>
+                <a href="/profile" class="hidden">Profile</a>
+                <button type="button" onclick="logout()" class="hidden">Log out</button>
+            </nav>
+        </div>
     </header>
 
-    <main>
-        <h2>Stock history</h2>
-        <form onsubmit="formSubmit(event)">
-            <input placeholder="Stock ticker" id="ticker" />
-            <select name="interval">
-                <option value="1day">1 day</option>
-                <option value="1week">1 week</option>
-                <option value="1month" selected>1 month</option>
-                <option value="3months">3 months</option>
-                <option value="6months">6 months</option>
-                <option value="1year">1 year</option>
-            </select>
-            <button type="submit">Show</button>
-            <div id="error"></div>
-        </form>
-        <canvas id="chart"></canvas>
+    <main class="main">
+        <div>
+            <h2>Stock history</h2>
+            <form onsubmit="formSubmit(event)" class="block">
+                <input placeholder="Stock ticker" id="ticker" />
+                <select name="interval">
+                    <option value="1day">1 day</option>
+                    <option value="1week">1 week</option>
+                    <option value="1month" selected>1 month</option>
+                    <option value="3months">3 months</option>
+                    <option value="6months">6 months</option>
+                    <option value="1year">1 year</option>
+                </select>
+                <button type="submit">Show</button>
+                <div id="error"></div>
+            </form>
+            <canvas id="chart" class="block"></canvas>
+        </div>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

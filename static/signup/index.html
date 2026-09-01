@@ -10,29 +10,33 @@
 </head>
 
 <body>
-    <header>
-        <h1>Trading Simulator</h1>
-        <nav>
-            <a href="/">Stocks</a>
-            <a href="/history">History</a>
-            <a href="/signup" class="active">Sign up</a>
-            <a href="/login">Log in</a>
-        </nav>
+    <header class="header">
+        <div>
+            <h1>Trading Simulator</h1>
+            <nav>
+                <a href="/">Stocks</a>
+                <a href="/history">History</a>
+                <a href="/signup" class="active">Sign up</a>
+                <a href="/login">Log in</a>
+            </nav>
+        </div>
     </header>
 
-    <main>
-        <h2>Sign Up</h2>
-        <form onsubmit="signup(event)">
-            <label>Username</label>
-            <input name="username" type="text" />
-            <label>Email</label>
-            <input name="email" type="email" />
-            <label>Password</label>
-            <input name="password" type="password" />
-            <button type="submit">Confirm</button>
-            <div id="error"></div>
-        </form>
-        <div>If you already have an account, log in <a href="/login">here</a></div>
+    <main class="main">
+        <div>
+            <h2>Sign Up</h2>
+            <form onsubmit="signup(event)" class="block form">
+                <label>Username</label>
+                <input name="username" type="text" class="block" />
+                <label>Email</label>
+                <input name="email" type="email" class="block" />
+                <label>Password</label>
+                <input name="password" type="password" class="block" />
+                <button type="submit">Confirm</button>
+                <div id="error"></div>
+            </form>
+            <div class="block">If you already have an account, log in <a href="/login">here</a></div>
+        </div>
     </main>
 
     <script>
