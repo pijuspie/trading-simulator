@@ -175,7 +175,7 @@ def get_project():
         userManager.closeDB()
         return "Project not found", 404
 
-    jsonObject = {"name": project.getName(), "balance": round(project.getBalance(), 2), "certificates": []}
+    jsonObject = {"name": project.getName(), "balance": round(project.getBalance(), 2), "initialBalance": round(project.getInitialBalance(), 2), "certificates": [], "members": []}
     certificates = userManager.getStockCertificates(projectId)
 
     stockManager = StockManager()
@@ -200,6 +200,12 @@ def get_project():
         jsonObject["certificates"].append(certificateObject)
 
     stockManager.closeDB()
+
+    users = userManager.getUsers(projectId)
+    for u in users:
+        user = userManager.getUserById(u)
+        jsonObject["members"].append({"name": user.getName(), "id": user.getId()})
+
     userManager.closeDB()
     return jsonify(jsonObject), 200
 
@@ -313,6 +319,56 @@ def post_sell_stock():
     userManager.closeDB()
     
     return "Transaction successful", 200  
+
+@app.post("/api/addmember")
+def post_add_member():
+    id = session.get("userId")
+    if id is None:
+        return "Unauthorized", 401
+
+    credentials = request.get_json()
+    userName = credentials["userName"]
+    projectId = credentials["projectId"]
+
+    userManager = UserManager()
+    if not userManager.checkIfUserInProject(id, projectId):
+        userManager.closeDB()
+        return "User is not in the project", 403
+
+    user = userManager.getUser(userName)
+    if user is None:
+        userManager.closeDB()
+        return "User not found", 404
+
+    userManager.addUserProject(user.getId(), projectId)
+    userManager.closeDB()
+    
+    return "Member added successfully", 200  
+
+@app.post("/api/removemember")
+def post_remove_member():
+    # TODO: sell owned stocks
+
+    id = session.get("userId")
+    if id is None:
+        return "Unauthorized", 401
+
+    credentials = request.get_json()
+    projectId = credentials["projectId"]
+
+    userManager = UserManager()
+    if not userManager.checkIfUserInProject(id, projectId):
+        userManager.closeDB()
+        return "User is not in the project", 403
+
+    userManager.removeUserProject(id, projectId)
+
+    members = userManager.getUsers(projectId)
+    if len(members) == 0:
+        userManager.removeProject(projectId)
+
+    userManager.closeDB()
+    return "Member added successfully", 200  
 
 @app.route("/")
 def home():

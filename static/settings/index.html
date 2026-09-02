@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Simulator | Project Settings</title>
+
+    <link rel="stylesheet" href="/main.css">
+</head>
+
+<body>
+    <header class="header">
+        <div>
+            <h1>Trading Simulator</h1>
+            <nav>
+                <a href="/">Stocks</a>
+                <a href="/history">History</a>
+                <a href="/projects">Projects</a>
+                <a href="/profile">Profile</a>
+                <button type="button" onclick="logout()">Log out</button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main">
+        <div>
+            <h2>Settings (Project: <span id="projectName"></span>)</h2>
+            <a href="/project" id="back" class="button">Back</a>
+            <form class="block form">
+                <label>Balance</label>
+                <input id="balance" type="number" readonly class="block" />
+                <label>Initial Balance</label>
+                <input id="init-balance" type="number" readonly class="block" />
+            </form>
+            <table class="block">
+                <thead>
+                    <tr>
+                        <th>Member</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="members">
+                </tbody>
+            </table>
+            <form onsubmit="addMember(event)" class="block">
+                <input placeholder="User name" name="username" type="text" />
+                <button type="submit">Add</button>
+            </form>
+            <div id="error"></div>
+            <button type="button" onclick="leaveGroup()">Leave group</button>
+        </div>
+    </main>
+
+    <template id="memberRow">
+        <tr>
+            <td></td>
+            <td class="linkColumn"><a href="">Inspect</a></td>
+        </tr>
+    </template>
+
+    <script>
+        async function logout() {
+            fetch("/api/logout")
+                .then(() => window.location.href = "/")
+                .catch(error => console.log(error));
+        }
+
+        async function requestProjectInfo() {
+            const params = new URLSearchParams(window.location.search);
+            const projectId = params.get("projectId");
+            if (projectId === null || projectId === "") window.location.href = "/projects";
+
+            try {
+                const response = await fetch("/api/project?id=" + projectId);
+                if (response.status === 401) window.location.href = "/login";
+                if (response.status === 404) window.location.href = "/projects";
+                if (!response.ok) return;
+                const project = await response.json();
+
+                document.getElementById("projectName").innerText = project.name;
+                document.getElementById("back").href = "/project/?id=" + projectId;
+                document.getElementById("balance").value = project.balance;
+                document.getElementById("init-balance").value = project.initialBalance;
+
+                const container = document.getElementById("members");
+                const template = document.getElementById("memberRow");
+                project.members.forEach(member => {
+                    const newRow = template.content.cloneNode(true);
+                    const cells = newRow.children[0].children;
+                    cells[0].textContent = member.name;
+                    cells[1].children[0].setAttribute("href", "/member/?projectId=" + projectId + "&userId=" + member.id);
+                    container.appendChild(newRow);
+                });
+            } catch (error) {
+                console.log(error)
+            }
+        }
+
+        async function requestAddMember(name) {
+            const params = new URLSearchParams(window.location.search);
+            const projectId = params.get("projectId");
+            if (projectId === null || projectId === "") window.location.href = "/projects";
+
+            const body = { userName: name, projectId: projectId };
+
+            const response = await fetch("/api/addmember", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(body)
+            });
+
+            if (!response.ok) {
+                const message = await response.text()
+                document.getElementById("error").innerText = message;
+            } else {
+                window.location.reload();
+            }
+        }
+
+        function addMember(event) {
+            event.preventDefault();
+            const name = event.target[0].value;
+            requestAddMember(name);
+        }
+
+        async function leaveGroup() {
+            const params = new URLSearchParams(window.location.search);
+            const projectId = params.get("projectId");
+            if (projectId === null || projectId === "") window.location.href = "/projects";
+
+            const body = { projectId: projectId };
+
+            const response = await fetch("/api/removemember", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(body)
+            });
+
+            if (!response.ok) {
+                const message = await response.text()
+                console.log(message);
+            } else {
+                window.location.href = "/projects";
+            }
+        }
+
+        requestProjectInfo();
+    </script>
+</body>
+
+</html>

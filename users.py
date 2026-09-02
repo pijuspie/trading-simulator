@@ -127,6 +127,11 @@ class UserManager:
         self.__db.cursor.execute("INSERT INTO UserProject (userId, projectId) VALUES (?, ?);", (userId, projectId))
         self.__db.connection.commit()
 
+    def checkIfUserInProject(self, userId: int, projectId: int):
+        self.__db.cursor.execute("SELECT userId FROM UserProject WHERE projectId = ? AND userId = ?;", (projectId, userId))
+        user = self.__db.cursor.fetchone()
+        return user is not None
+
     def getUsers(self, projectId: int):
         self.__db.cursor.execute("SELECT userId FROM UserProject WHERE projectId = ?;", (projectId,))
         users = self.__db.cursor.fetchall()
