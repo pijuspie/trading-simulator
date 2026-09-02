@@ -10,41 +10,45 @@
 </head>
 
 <body>
-    <header>
-        <h1>Trading Simulator</h1>
-        <nav>
-            <a href="/">Stocks</a>
-            <a href="/history">History</a>
-            <a href="/projects" class="active">Projects</a>
-            <a href="/profile">Profile</a>
-            <button type="button" onclick="logout()">Log out</button>
-        </nav>
+    <header class="header">
+        <div>
+            <h1>Trading Simulator</h1>
+            <nav>
+                <a href="/">Stocks</a>
+                <a href="/history">History</a>
+                <a href="/projects" class="active">Projects</a>
+                <a href="/profile">Profile</a>
+                <button type="button" onclick="logout()">Log out</button>
+            </nav>
+        </div>
     </header>
 
-    <main>
-        <h2>Project list</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Project name</th>
-                    <th>Members</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody id="projects">
-            </tbody>
-        </table>
+    <main class="main">
+        <div>
+            <h2>Project list</h2>
+            <table class="block">
+                <thead>
+                    <tr>
+                        <th>Project name</th>
+                        <th>Members</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="projects">
+                </tbody>
+            </table>
+            <a href="/newproject" class="button">New</a>
+        </div>
     </main>
 
     <template id="projectRow">
         <tr>
-            <th></th>
-            <th></th>
-            <th><a href="">Inspect</a></th>
+            <td></td>
+            <td></td>
+            <td class="linkColumn"><a href="">Inspect</a></td>
         </tr>
     </template>
 
-    <a href="/newproject">New</a>
 
     <script>
         async function logout() {

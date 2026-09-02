@@ -10,30 +10,34 @@
 </head>
 
 <body>
-    <header>
-        <h1>Trading Simulator</h1>
-        <nav>
-            <a href="/">Stocks</a>
-            <a href="/history">History</a>
-            <a href="/projects">Projects</a>
-            <a href="/profile">Profile</a>
-            <button type="button" onclick="logout()">Log out</button>
-        </nav>
+    <header class="header">
+        <div>
+            <h1>Trading Simulator</h1>
+            <nav>
+                <a href="/">Stocks</a>
+                <a href="/history">History</a>
+                <a href="/projects">Projects</a>
+                <a href="/profile">Profile</a>
+                <button type="button" onclick="logout()">Log out</button>
+            </nav>
+        </div>
     </header>
 
-    <main>
-        <a href="/project" id="back">Back</a>
-        <h2>Buy Stock Certificates (Project: <span id="projectName"></span>)</h2>
-        <form onsubmit="buy(event)">
-            <label>Ticker</label>
-            <input id="ticker" type="text" onchange="calcPrice()" />
-            <label>Quantity</label>
-            <input id="quantity" type="number" step="any" onchange="calcPrice()" />
-            <label>Price (calculated automatically)</label>
-            <input id="price" type="number" readonly />
-            <button type="submit">Buy</button>
-            <div id="error"></div>
-        </form>
+    <main class="main">
+        <div>
+            <h2>Buy Stock Certificates (Project: <span id="projectName"></span>)</h2>
+            <a href="/project" id="back" class="button">Back</a>
+            <form onsubmit="buy(event)" class="block form">
+                <label>Ticker</label>
+                <input id="ticker" type="text" onchange="calcPrice()" class="block" />
+                <label>Quantity</label>
+                <input id="quantity" type="number" step="any" onchange="calcPrice()" class="block" />
+                <label>Price (calculated automatically)</label>
+                <input id="price" type="number" readonly class="block" />
+                <button type="submit">Buy</button>
+                <div id="error"></div>
+            </form>
+        </div>
     </main>
 
     <script>

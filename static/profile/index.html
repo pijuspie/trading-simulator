@@ -10,25 +10,29 @@
 </head>
 
 <body>
-    <header>
-        <h1>Trading Simulator</h1>
-        <nav>
-            <a href="/">Stocks</a>
-            <a href="/history">History</a>
-            <a href="/projects">Projects</a>
-            <a href="/profile" class="active">Profile</a>
-            <button type="button" onclick="logout()">Log out</button>
-        </nav>
+    <header class="header">
+        <div>
+            <h1>Trading Simulator</h1>
+            <nav>
+                <a href="/">Stocks</a>
+                <a href="/history">History</a>
+                <a href="/projects">Projects</a>
+                <a href="/profile" class="active">Profile</a>
+                <button type="button" onclick="logout()">Log out</button>
+            </nav>
+        </div>
     </header>
 
-    <main>
-        <h2>Profile</h2>
-        <form>
-            <label>Username</label>
-            <input id="username" type="text" readonly />
-            <label>Email</label>
-            <input id="email" type="email" readonly />
-        </form>
+    <main class="main">
+        <div>
+            <h2>Profile</h2>
+            <form class="block form">
+                <label>Username</label>
+                <input id="username" type="text" readonly class="block" />
+                <label>Email</label>
+                <input id="email" type="email" readonly class="block" />
+            </form>
+        </div>
     </main>
 
     <script>
