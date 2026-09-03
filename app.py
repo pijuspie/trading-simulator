@@ -367,6 +367,17 @@ def post_remove_member():
     if len(members) == 0:
         userManager.removeProject(projectId)
 
+    certificates = userManager.getStockCertificates(projectId)
+    stockManager = StockManager()
+
+    for c in certificates:
+        if c.getStatus() == "CLOSED":
+            continue
+        price = stockManager.getPriceNow(c.getStockId()).getPrice()
+        value = price * c.getQuantity()
+        userManager.closeStockCertificate(c.getId(), value)
+
+    stockManager.closeDB()
     userManager.closeDB()
     return "Member added successfully", 200  
 
