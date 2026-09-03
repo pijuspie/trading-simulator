@@ -62,6 +62,9 @@ class StockManager:
     def getPrices(self, id: int, interval: str):
         start = datetime.now()
         minutes = 5
+
+        result: list[StockPrice] = []
+
         if interval == "1day":
             start -= timedelta(days=1)
         elif interval == "1week":
@@ -80,7 +83,7 @@ class StockManager:
             start -= timedelta(days=360)
             minutes = 60*24
         else:
-            return []
+            return result
 
         start = int(start.timestamp())
         end = int(datetime.now().timestamp())
@@ -99,7 +102,8 @@ class StockManager:
             );
         """, (id, id, start, end, minutes*60))
         prices = self.__db.cursor.fetchall()
-        return [StockPrice(int(x[0]), id, float(x[1])) for x in prices]      
+        result = [StockPrice(int(x[0]), id, float(x[1])) for x in prices]    
+        return result
 
     def closeDB(self):
         self.__db.close()

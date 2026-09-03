@@ -55,6 +55,10 @@ h2 {
     display: none;
 }
 
+.active {
+    text-decoration: underline;
+}
+
 .header {
     border-bottom: 2px solid grey;
 }
@@ -80,10 +84,6 @@ h2 {
     padding: 1rem;
     color: inherit;
     text-decoration: none;
-}
-
-.header nav a.active {
-    text-decoration: underline;
 }
 
 .header nav button {

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Simulator | Member Statistics</title>
+
+    <link rel="stylesheet" href="/main.css">
+</head>
+
+<body>
+    <header class="header">
+        <div>
+            <h1>Trading Simulator</h1>
+            <nav>
+                <a href="/">Stocks</a>
+                <a href="/history">History</a>
+                <a href="/projects">Projects</a>
+                <a href="/profile">Profile</a>
+                <button type="button" onclick="logout()">Log out</button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main">
+        <div>
+            <h2>Member Statistics (User name: <span id="userName"></span>)</h2>
+            <a href="/settings" id="back" class="button">Back</a>
+            <div class="block">
+                <button type="button" class="active" id="allCertificates" onclick="showCertificates('all')">All
+                    certificates</button>
+                <button type="button" id="openCertificates" onclick="showCertificates('open')">Open
+                    certificates</button>
+                <button type="button" id="closedCertificates" onclick="showCertificates('closed')">Closed
+                    certificates</button>
+            </div>
+            <form class="block">
+                <div class="block">
+                    <label>Weighted average return</label>
+                    <input id="weightedAverageReturn" type="number" readonly />
+                    <label>Volatility</label>
+                    <input id="volatility" type="number" readonly />
+                </div>
+                <div class="block">
+                    <label>Sharpe ratio</label>
+                    <input id="sharpeRatio" type="number" readonly />
+                    <label>Highest-return stock</label>
+                    <input id="highestReturnStock" type="text" readonly />
+                </div>
+                <div class="block">
+                    <label>Lowest-return stock</label>
+                    <input id="lowestReturnStock" type="text" readonly />
+                </div>
+            </form>
+            <div class="block">
+                <button type="button" class="active" id="portfolioValue"
+                    onclick="setDataset('dailyPortfolioValue')">Portfolio value</button>
+                <button type="button" id="netCash" onclick="setDataset('dailyNetCash')">Net Cash</button>
+                <button type="button" id="returns" onclick="setDataset('dailyReturns')">Returns</button>
+            </div>
+            <canvas id="chart" class="block"></canvas>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        let certificates = {};
+        let type = "all";
+        let dataset = "dailyPortfolioValue";
+
+        const ctx = document.getElementById("chart");
+        const chart = new Chart(ctx, {
+            type: "line",
+            data: { datasets: [{ label: "Value" }] },
+            options: {
+                borderWidth: 3,
+                pointRadius: 0,
+                pointHitRadius: 15,
+            }
+        });
+
+        async function logout() {
+            fetch("/api/logout")
+                .then(() => window.location.href = "/")
+                .catch(error => console.log(error));
+        }
+
+        function showCertificates(t) {
+            type = t;
+            document.getElementById("allCertificates").classList.remove("active");
+            document.getElementById("openCertificates").classList.remove("active");
+            document.getElementById("closedCertificates").classList.remove("active");
+
+            if (t == "all") {
+                document.getElementById("allCertificates").classList.add("active");
+            } else if (t == "open") {
+                document.getElementById("openCertificates").classList.add("active");
+            } else if (t == "closed") {
+                document.getElementById("closedCertificates").classList.add("active");
+            }
+
+            document.getElementById("highestReturnStock").value = certificates[t].highestReturnStock;
+            document.getElementById("lowestReturnStock").value = certificates[t].lowestReturnStock;
+            document.getElementById("weightedAverageReturn").value = certificates[t].weightedAverageReturn;
+            document.getElementById("volatility").value = certificates[t].volatility;
+            document.getElementById("sharpeRatio").value = certificates[t].sharpeRatio;
+
+            showChart();
+        }
+
+        function setDataset(x) {
+            dataset = x;
+            document.getElementById("portfolioValue").classList.remove("active");
+            document.getElementById("netCash").classList.remove("active");
+            document.getElementById("returns").classList.remove("active");
+
+            if (x === "dailyPortfolioValue") {
+                document.getElementById("portfolioValue").classList.add("active");
+            } else if (x === "dailyNetCash") {
+                document.getElementById("netCash").classList.add("active");
+            } else if (x === "dailyReturns") {
+                document.getElementById("returns").classList.add("active");
+            }
+
+            showChart();
+        }
+
+        function showChart() {
+            chart.data.labels = certificates[type][dataset].map(x => {
+                return new Date(x.timestamp * 1000).toLocaleString("en-GB", {
+                    day: "2-digit",
+                    month: "short",
+                    hour: "2-digit",
+                    minute: "2-digit"
+                });
+            });
+            chart.data.datasets[0].data = certificates[type][dataset].map(x => x.value);
+            chart.update();
+        }
+
+        async function requestMemberInfo() {
+            const params = new URLSearchParams(window.location.search);
+            const projectId = params.get("projectId");
+            const userId = params.get("userId");
+            if (projectId === null || projectId === "") window.location.href = "/projects";
+            if (userId === null || userId === "") window.location.href = "/project/?id=" + projectId;
+
+            try {
+                const response = await fetch("/api/member?projectId=" + projectId + "&userId=" + userId);
+                if (response.status === 401) window.location.href = "/login";
+                if (response.status === 404 || response.status === 403) window.location.href = "/projects";
+                if (!response.ok) return;
+                const member = await response.json();
+
+                document.getElementById("userName").innerText = member.name;
+                document.getElementById("back").href = "/settings/?projectId=" + projectId;
+                certificates = member.certificates;
+                showCertificates("all");
+            } catch (error) {
+                console.log(error)
+            }
+        }
+
+        requestMemberInfo();
+    </script>
+</body>
+
+</html>

@@ -40,6 +40,7 @@
                         <th>Change</th>
                         <th>Price</th>
                         <th></th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody id="certificates">
@@ -55,6 +56,7 @@
             <td></td>
             <td></td>
             <td></td>
+            <td class="linkColumn"><a href="">Inspect</a></td>
             <td class="linkColumn"><button type="button" onclick="">Sell</button></td>
         </tr>
     </template>
@@ -93,7 +95,8 @@
                     cells[2].textContent = certificate.owner;
                     cells[3].textContent = certificate.change;
                     cells[4].textContent = certificate.price;
-                    cells[5].children[0].setAttribute("onclick", "sell(" + certificate.id + ")");
+                    cells[5].children[0].setAttribute("href", "/history/?stock=" + certificate.ticker);
+                    cells[6].children[0].setAttribute("onclick", "sell(" + certificate.id + ")");
                     container.appendChild(newRow);
                 });
             } catch (error) {

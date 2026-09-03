@@ -40,7 +40,7 @@ class Project:
         return self.__balance
     
 class StockCertificate:
-    def __init__(self, id: int, userId: int, projectId: int, stockId: int, quantity: float, purchasePrice: float, purchaseTimestamp: int, status: str):
+    def __init__(self, id: int, userId: int, projectId: int, stockId: int, quantity: float, purchasePrice: float, purchaseTimestamp: int, status: str, salePrice: float, saleTimestamp: int):
         self.__id = id
         self.__userId = userId
         self.__projectId = projectId
@@ -49,6 +49,8 @@ class StockCertificate:
         self.__purchasePrice = purchasePrice
         self.__purchaseTimestamp = purchaseTimestamp
         self.__status = status
+        self.__salePrice = salePrice
+        self.__saleTimestamp = saleTimestamp
 
     def getId(self):
         return self.__id
@@ -72,7 +74,13 @@ class StockCertificate:
         return self.__purchaseTimestamp
     
     def getStatus(self):
-        return self.__status    
+        return self.__status   
+
+    def getSalePrice(self):
+        return self.__salePrice
+    
+    def getSaleTimestamp(self):
+        return self.__saleTimestamp 
 
 class UserManager:
     def __init__(self):
@@ -149,10 +157,10 @@ class UserManager:
     def openStockCertificate(self, userId: int, projectId: int, stockId: int, quantity: float, purchasePrice: float):
         purchaseTimestamp = int(datetime.now().timestamp())
         self.__db.cursor.execute("UPDATE Project SET balance = balance - ? WHERE projectId = ?;", (purchasePrice, projectId))
-        self.__db.cursor.execute("INSERT INTO StockCertificate (userId, projectId, stockId, quantity, purchaseTimestamp, purchasePrice, certificateStatus) VALUES (?, ?, ?, ?, ?, ?, ?);", (userId, projectId, stockId, quantity, purchaseTimestamp, purchasePrice, "OPEN"))
+        self.__db.cursor.execute("INSERT INTO StockCertificate (userId, projectId, stockId, quantity, purchaseTimestamp, purchasePrice, certificateStatus, saleTimestamp, salePrice) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);", (userId, projectId, stockId, quantity, purchaseTimestamp, purchasePrice, "OPEN", 0, 0))
         self.__db.connection.commit()
 
-    def closeStockCertificate(self, certificateId: int, price: float):
+    def closeStockCertificate(self, certificateId: int, salePrice: float):
         self.__db.cursor.execute("""
             UPDATE Project
             SET balance = balance + ?
@@ -161,21 +169,22 @@ class UserManager:
                 FROM StockCertificate
                 WHERE certificateId = ?
             );
-        """, (price, certificateId))
-        self.__db.cursor.execute("UPDATE StockCertificate SET certificateStatus = ? WHERE certificateId = ?;", ("CLOSED", certificateId))
+        """, (salePrice, certificateId))
+        saleTimestamp = int(datetime.now().timestamp())
+        self.__db.cursor.execute("UPDATE StockCertificate SET certificateStatus = ?, saleTimestamp = ?, salePrice = ? WHERE certificateId = ?;", ("CLOSED", certificateId, saleTimestamp, salePrice))
         self.__db.connection.commit()
 
     def getStockCertificates(self, projectId):
-        self.__db.cursor.execute("SELECT certificateId, userId, projectId, stockId, quantity, purchasePrice, purchaseTimestamp, certificateStatus FROM StockCertificate WHERE projectId = ?;", (projectId,))
+        self.__db.cursor.execute("SELECT certificateId, userId, projectId, stockId, quantity, purchasePrice, purchaseTimestamp, certificateStatus, salePrice, saleTimestamp FROM StockCertificate WHERE projectId = ?;", (projectId,))
         certificates = self.__db.cursor.fetchall()
-        return [StockCertificate(int(c[0]), int(c[1]), int(c[2]), int(c[3]), float(c[4]), float(c[5]), int(c[6]), str(c[7])) for c in certificates]
+        return [StockCertificate(int(c[0]), int(c[1]), int(c[2]), int(c[3]), float(c[4]), float(c[5]), int(c[6]), str(c[7]), float(c[8]), int(c[9])) for c in certificates]
 
     def getStockCertificate(self, certificateId):
-        self.__db.cursor.execute("SELECT certificateId, userId, projectId, stockId, quantity, purchasePrice, purchaseTimestamp, certificateStatus FROM StockCertificate WHERE certificateId = ?;", (certificateId,))
+        self.__db.cursor.execute("SELECT certificateId, userId, projectId, stockId, quantity, purchasePrice, purchaseTimestamp, certificateStatus, salePrice, saleTimestamp FROM StockCertificate WHERE certificateId = ?;", (certificateId,))
         c = self.__db.cursor.fetchone()
         if c is None:
             return None
-        return StockCertificate(int(c[0]), int(c[1]), int(c[2]), int(c[3]), float(c[4]), float(c[5]), int(c[6]), str(c[7]))
+        return StockCertificate(int(c[0]), int(c[1]), int(c[2]), int(c[3]), float(c[4]), float(c[5]), int(c[6]), str(c[7]), float(c[8]), int(c[9]))
 
     def closeDB(self):
         self.__db.close()

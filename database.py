@@ -69,6 +69,8 @@ def initialize():
             purchaseTimestamp INTEGER NOT NULL,
             purchasePrice REAL NOT NULL,
             certificateStatus TEXT NOT NULL,
+            saleTimestamp INTEGER NOT NULL,
+            salePrice REAL NOT NULL,
             CONSTRAINT fk_userId FOREIGN KEY (userId) REFERENCES User(userId),
             CONSTRAINT fk_projectId FOREIGN KEY (projectId) REFERENCES Project(projectId),
             CONSTRAINT fk_stockId FOREIGN KEY (stockId) REFERENCES Stock(stockId)

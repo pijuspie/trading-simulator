@@ -3,6 +3,7 @@ from flask import Flask, send_from_directory, abort, jsonify, request, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from stocks import StockManager
 from users import UserManager
+import analytics
 
 STATIC = "static"
 
@@ -347,8 +348,6 @@ def post_add_member():
 
 @app.post("/api/removemember")
 def post_remove_member():
-    # TODO: sell owned stocks
-
     id = session.get("userId")
     if id is None:
         return "Unauthorized", 401
@@ -380,6 +379,49 @@ def post_remove_member():
     stockManager.closeDB()
     userManager.closeDB()
     return "Member added successfully", 200  
+
+@app.get("/api/member")
+def get_member_statistics():
+    id = session.get("userId")
+    if id is None:
+        return "Unauthorized", 401
+
+    projectId = request.args.get("projectId")
+    userId = request.args.get("userId")
+    if projectId is None or userId is None:
+        return "Internal server error", 500
+    projectId = int(projectId)
+    userId = int(userId)
+
+    userManager = UserManager()
+    if not userManager.checkIfUserInProject(id, projectId):
+        userManager.closeDB()
+        return "User is not in the project", 403
+
+    user = userManager.getUserById(userId)
+
+    if not userManager.checkIfUserInProject(userId, projectId):
+        userManager.closeDB()
+        return "User is not in the project", 403
+
+    certificates = userManager.getStockCertificates(projectId)
+    userManager.closeDB()
+
+    certificates = [c for c in certificates if c.getUserId() == userId]
+
+    openC = [c for c in certificates if c.getStatus() == "OPEN"]
+    closedC = [c for c in certificates if c.getStatus() == "CLOSED"]
+
+    jsonObject = {
+        "name": user.getName(),
+        "certificates": {
+            "open": analytics.analyzeCertificates(openC),
+            "closed": analytics.analyzeCertificates(closedC),
+            "all": analytics.analyzeCertificates(certificates)
+        }        
+    }
+
+    return jsonify(jsonObject), 200  
 
 @app.route("/")
 def home():
