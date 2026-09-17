@@ -121,6 +121,8 @@ class UserManager:
     def getProjectByName(self, name: str):
         self.__db.cursor.execute("SELECT projectId, projectName, initialBalance, balance FROM Project WHERE projectName = ?;", (name,))
         project = self.__db.cursor.fetchone()
+        if project is None:
+            return None
         return Project(int(project[0]), str(project[1]), float(project[2]), float(project[3]))
 
     def addProject(self, name: str, initBalance: float):

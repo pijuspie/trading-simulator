@@ -229,8 +229,16 @@ def post_new_project():
         userManager.closeDB()
         return "Internal server error", 500
 
+    if userManager.getProjectByName(name) is not None:
+        userManager.closeDB()
+        return "Project name must be unique", 409
+
     userManager.addProject(name, initialBalance)
     project = userManager.getProjectByName(name)
+    if project is None:
+        userManager.closeDB()
+        return "Internal server error", 500
+
     userManager.addUserProject(id, project.getId())
     userManager.closeDB()
 

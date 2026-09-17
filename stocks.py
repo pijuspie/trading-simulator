@@ -37,7 +37,16 @@ class StockManager:
         return Stock(int(stock[0]), str(stock[1]), str(stock[2]))
 
     def updatePrices(self):
-        self.__db.cursor.execute("SELECT MAX(timestamp) FROM StockPrice;")
+        print("Updating stock prices")
+
+        self.__db.cursor.execute("""
+            SELECT MIN(timestamp)
+            FROM (
+                SELECT MAX(timestamp) AS timestamp
+                FROM StockPrice
+                GROUP BY stockId
+            );
+        """)
         res = self.__db.cursor.fetchone()
 
         start = START
@@ -57,6 +66,8 @@ class StockManager:
     def getPriceNow(self, id: int):
         self.__db.cursor.execute("SELECT timestamp, price FROM StockPrice WHERE stockId = ? ORDER BY timestamp DESC LIMIT 1;", (id,))
         price = self.__db.cursor.fetchone()
+        if price is None:
+            return StockPrice(0, id, 0)
         return StockPrice(int(price[0]), id, float(price[1]))
 
     def getPrices(self, id: int, interval: str):
@@ -110,12 +121,34 @@ class StockManager:
 
 def initialize():
     sm = StockManager()
-    sm.addStock("Apple Inc", "AAPL")
-    sm.addStock("Alphabet Inc Class C", "GOOG")
-    sm.addStock("Microsoft Corp", "MSFT")
-    sm.addStock("Amazon", "AMZN")
-    sm.addStock("Advanced Micro Devices Inc", "AMD")
-    sm.addStock("NVIDIA Corp", "NVDA")
-    sm.addStock("Tesla Inc", "TSLA")
-    sm.updatePrices()
+    sm.addStock("Apple Inc.", "AAPL")
+    sm.addStock("Microsoft Corporation", "MSFT")
+    sm.addStock("Alphabet Inc.", "GOOGL")
+    sm.addStock("Amazon.com Inc.", "AMZN")
+    sm.addStock("NVIDIA Corporation", "NVDA")
+    sm.addStock("Meta Platforms Inc.", "META")
+    sm.addStock("Tesla Inc.", "TSLA")
+    sm.addStock("Advanced Micro Devices Inc.", "AMD")
+    sm.addStock("Intel Corporation", "INTC")
+    sm.addStock("Netflix Inc.", "NFLX")
+    sm.addStock("JPMorgan Chase & Co.", "JPM")
+    sm.addStock("Visa Inc.", "V")
+    sm.addStock("Mastercard Incorporated", "MA")
+    sm.addStock("Bank of America Corporation", "BAC")
+    sm.addStock("Walmart Inc.", "WMT")
+    sm.addStock("Costco Wholesale Corporation", "COST")
+    sm.addStock("The Coca-Cola Company", "KO")
+    sm.addStock("PepsiCo Inc.", "PEP")
+    sm.addStock("McDonald's Corporation", "MCD")
+    sm.addStock("Nike Inc.", "NKE")
+    sm.addStock("The Walt Disney Company", "DIS")
+    sm.addStock("Starbucks Corporation", "SBUX")
+    sm.addStock("Exxon Mobil Corporation", "XOM")
+    sm.addStock("Chevron Corporation", "CVX")
+    sm.addStock("Johnson & Johnson", "JNJ")
+    sm.addStock("Pfizer Inc.", "PFE")
+    sm.addStock("Eli Lilly and Company", "LLY")
+    sm.addStock("The Boeing Company", "BA")
+    sm.addStock("Caterpillar Inc.", "CAT")
+    sm.addStock("Ford Motor Company", "F")
     sm.closeDB()

@@ -205,6 +205,7 @@ def analyzeCertificates(certificates: list[StockCertificate]):
         "weightedAverageReturn": calculateWeightedAverageReturn(certificates),
         "dailyReturns": calculateDailyReturns(certificates),
         "volatility": calculateVolatility(certificates),
+        "sharpeRatio": calculateSharpeRatio(certificates),
         "highestReturnStock": "-",
         "lowestReturnStock": "-"
     }
