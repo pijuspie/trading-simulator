@@ -173,7 +173,7 @@ class UserManager:
             );
         """, (salePrice, certificateId))
         saleTimestamp = int(datetime.now().timestamp())
-        self.__db.cursor.execute("UPDATE StockCertificate SET certificateStatus = ?, saleTimestamp = ?, salePrice = ? WHERE certificateId = ?;", ("CLOSED", certificateId, saleTimestamp, salePrice))
+        self.__db.cursor.execute("UPDATE StockCertificate SET certificateStatus = ?, saleTimestamp = ?, salePrice = ? WHERE certificateId = ?;", ("CLOSED", saleTimestamp, salePrice, certificateId))
         self.__db.connection.commit()
 
     def getStockCertificates(self, projectId):
